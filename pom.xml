@@ -18,7 +18,7 @@
     <description>Bill Splitter - Spring Boot + MySQL</description>
 
     <properties>
-        <java.version>19</java.version>
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>
@@ -48,11 +48,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-        	<groupId>com.billsplit</groupId>
-        	<artifactId>bill-splitter</artifactId>
-        	<version>1.0.0</version>
         </dependency>
     </dependencies>
 
