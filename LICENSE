@@ -1,6 +1,10 @@
 MIT License
 
+<<<<<<< HEAD
 Copyright (c) 2026 Pravat Kiran Timsina
+=======
+Copyright (c) 2026 Pravat
+>>>>>>> fc6daf2 (Initial commit : Bill Splitter- Spring Boot+ React)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
