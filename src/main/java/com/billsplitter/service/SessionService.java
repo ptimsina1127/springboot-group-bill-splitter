@@ -26,12 +26,6 @@ public class SessionService {
     private final ParticipantRepository participantRepository;
     private final ExpenseItemRepository expenseItemRepository;
 
-    public SessionService(SessionRepository sessionRepository, ParticipantRepository participantRepository, ExpenseItemRepository expenseItemRepository) {
-        this.sessionRepository = sessionRepository;
-        this.participantRepository = participantRepository;
-        this.expenseItemRepository = expenseItemRepository;
-    }
-
     // ── Sessions ─────────────────────────────────────────────────────────────
 
     public SessionResponse createSession(CreateSessionRequest req) {
