@@ -278,10 +278,10 @@ free -h
 ```bash
 nano .env
 # Paste:
-MYSQL_ROOT_PASSWORD=<your-password>
+MYSQL_ROOT_PASSWORD=<your_root_password>
 MYSQL_DATABASE=bill_splitter
 MYSQL_USER=splitter
-MYSQL_PASSWORD=<your-password>
+MYSQL_PASSWORD=<your_user_password>
 ```
 
 ### Step 7: Deploy
@@ -480,7 +480,7 @@ Keep this terminal window open. The tunnel forwards your local port 3306 to the 
 
 ```bash
 mysql -h 127.0.0.1 -P 3306 -u splitter -p bill_splitter
-# Password: <your-password>
+# Password: <your_password>
 ```
 
 **Via GUI (MySQL Workbench, DBeaver, TablePlus):**
@@ -488,7 +488,7 @@ mysql -h 127.0.0.1 -P 3306 -u splitter -p bill_splitter
 - Host: `127.0.0.1` (or `localhost`)
 - Port: `3306`
 - User: `splitter`
-- Password: `<your-password>`
+- Password: `<your_password>`
 - Database: `bill_splitter`
 
 ---
