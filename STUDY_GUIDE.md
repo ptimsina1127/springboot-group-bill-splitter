@@ -1,4 +1,4 @@
-# Bill Splitter — Full Build Study Guide
+# Bill Splitter Full Build Documentation
 
 A complete walkthrough of building, containerizing, deploying, and securing a full-stack Spring Boot + React application on Oracle Cloud free tier with Docker, DuckDNS, Let's Encrypt, and GitHub Actions CI/CD.
 
