@@ -196,3 +196,167 @@ Remove a participant from a session.
 **Response `204`** — no content (success)
 
 **Response `404`** — session or participant not found
+
+---
+
+## Expense Items
+
+### `POST /sessions/{sessionId}/items`
+
+Add an expense item to a session.
+
+**Request body**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `paidByParticipantId` | string | yes | UUID of the person who paid |
+| `description` | string | yes | What the expense was for |
+| `amount` | number | yes | Positive decimal (e.g. 45.50) |
+| `sharedWithParticipantIds` | array of strings | no | Who shares this cost. If null or empty, **everyone** in the session splits equally |
+
+```json
+{
+  "paidByParticipantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "description": "Dinner at MoMo House",
+  "amount": 60.00,
+  "sharedWithParticipantIds": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890", "b2c3d4e5-f6a7-8901-bcde-f12345678901"]
+}
+```
+
+**Response `201`**
+
+```json
+{
+  "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+  "sessionId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "paidByParticipantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "description": "Dinner at MoMo House",
+  "amount": 60.00,
+  "sharedWithParticipantIds": ["a1b2c3d4-e5f6-7890-abcd-ef1234567890", "b2c3d4e5-f6a7-8901-bcde-f12345678901"]
+}
+```
+
+---
+
+### `PUT /sessions/{sessionId}/items/{itemId}`
+
+Update an expense item.
+
+**Request body** — same shape as add item
+
+**Response `200`** — same shape as add item response
+
+---
+
+### `DELETE /sessions/{sessionId}/items/{itemId}`
+
+Delete an expense item.
+
+**Response `204`** — no content (success)
+
+---
+
+## Settlement & Summary
+
+### `POST /sessions/{sessionId}/calculate`
+
+Calculate who owes whom. This runs the settlement algorithm and returns a list of debts.
+
+**Response `200`**
+
+```json
+{
+  "sessionId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "sessionName": "Trip to Pokhara",
+  "debts": [
+    {
+      "fromParticipantId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "fromParticipantName": "Bob",
+      "toParticipantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "toParticipantName": "Alice",
+      "amount": 10.00
+    },
+    {
+      "fromParticipantId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "fromParticipantName": "Charlie",
+      "toParticipantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "toParticipantName": "Alice",
+      "amount": 12.75
+    }
+  ],
+  "totalExpenses": 45.50
+}
+```
+
+Each `debt` means: *fromParticipant owes toParticipant the amount.*
+
+The algorithm minimizes the number of transactions (ideally N-1 for N people with non-zero balances).
+
+---
+
+### `GET /sessions/{sessionId}/summary`
+
+Get a per-person breakdown showing how much each person paid, how much they owe, and their net balance.
+
+**Response `200`**
+
+```json
+{
+  "sessionId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "sessionName": "Trip to Pokhara",
+  "totalExpenses": 60.00,
+  "participantCount": 3,
+  "itemCount": 1,
+  "balances": [
+    {
+      "participantId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "participantName": "Alice",
+      "totalPaid": 60.00,
+      "totalOwed": 20.00,
+      "netBalance": 40.00
+    },
+    {
+      "participantId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "participantName": "Bob",
+      "totalPaid": 0.00,
+      "totalOwed": 20.00,
+      "netBalance": -20.00
+    },
+    {
+      "participantId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "participantName": "Charlie",
+      "totalPaid": 0.00,
+      "totalOwed": 20.00,
+      "netBalance": -20.00
+    }
+  ]
+}
+```
+
+- `totalPaid`: how much this person paid for expenses
+- `totalOwed`: how much this person's share of all expenses is
+- `netBalance`: `totalPaid - totalOwed`. Positive means they're owed money. Negative means they owe money.
+
+---
+
+## Error Reference
+
+| Status | Meaning | Body |
+|---|---|---|
+| `200` | Success | Response object |
+| `201` | Created | The created resource |
+| `204` | No Content (delete success) | Empty |
+| `400` | Validation error | `{ "error": "field: message" }` |
+| `404` | Resource not found | Empty body |
+| `500` | Internal server error | `{ "error": "..." }` (rare) |
+
+Validation error messages:
+
+| Message | When |
+|---|---|
+| `Session name is required` | `name` is blank or missing |
+| `At least one participant is required` | `participantNames` is empty |
+| `Participant name is required` | Participant `name` is blank |
+| `paidByParticipantId is required` | `paidByParticipantId` is blank |
+| `Description is required` | `description` is blank |
+| `must be a positive number` | `amount` is negative |
