@@ -360,3 +360,99 @@ Validation error messages:
 | `paidByParticipantId is required` | `paidByParticipantId` is blank |
 | `Description is required` | `description` is blank |
 | `must be a positive number` | `amount` is negative |
+
+---
+
+## Typical Usage Flow
+
+A mobile app would typically follow this sequence:
+
+```
+1. POST /sessions
+   Create a session → get back sessionId and participant IDs
+
+2. POST /sessions/{id}/participants  (optional)
+   Add more people later
+
+3. POST /sessions/{id}/items
+   Log each expense as it happens
+
+4. GET /sessions/{id}
+   View current state (people + expenses)
+
+5. POST /sessions/{id}/calculate
+   When ready, compute who owes whom
+
+6. GET /sessions/{id}/summary
+   Get per-person breakdown
+```
+
+### State diagram
+
+```
+                ┌──────────────┐
+                │  Create      │
+                │  Session     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+         ┌──────│  Add People  │◄──────┐
+         │      └──────┬───────┘       │
+         │             │               │
+         │             ▼               │
+         │      ┌──────────────┐       │
+         │      │  Add Items   │───────┘
+         │      └──────┬───────┘  (add more items)
+         │             │
+         │             ▼
+         │      ┌──────────────┐
+         │      │  Calculate   │
+         │      └──────┬───────┘
+         │             │
+         │             ▼
+         │      ┌──────────────┐
+         └──────│  View Result │
+                └──────────────┘
+```
+
+---
+
+## Curl Examples
+
+```bash
+# Health check
+curl https://khoipaisa.duckdns.org/spring-api/healthz
+
+# Create a session
+curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","participantNames":["Alice","Bob"]}'
+
+# Add an expense item
+curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/items \
+  -H "Content-Type: application/json" \
+  -d '{"paidByParticipantId":"...","description":"Lunch","amount":30.00}'
+
+# Calculate settlements
+curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/calculate
+```
+
+---
+
+## Quick Reference
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/healthz` | Check API is alive |
+| `POST` | `/sessions` | Create session + initial participants |
+| `GET` | `/sessions/{id}` | Get session with all participants and items |
+| `PUT` | `/sessions/{id}` | Rename session |
+| `POST` | `/sessions/{id}/participants` | Add participant |
+| `PUT` | `/sessions/{id}/participants/{pid}` | Rename participant |
+| `DELETE` | `/sessions/{id}/participants/{pid}` | Remove participant |
+| `POST` | `/sessions/{id}/items` | Add expense item |
+| `PUT` | `/sessions/{id}/items/{iid}` | Update expense item |
+| `DELETE` | `/sessions/{id}/items/{iid}` | Delete expense item |
+| `POST` | `/sessions/{id}/calculate` | Calculate who owes whom |
+| `GET` | `/sessions/{id}/summary` | Get per-person balance summary |
