@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Users, ArrowRight } from 'lucide-react';
+import apiClient from '../api/client';
 
 export default function Home() {
   const navigate = useNavigate();
+  const [sessionId, setSessionId] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleJoin = async (e) => {
+    e.preventDefault();
+    const val = sessionId.trim();
+    if (!val) return;
+    setLoading(true);
+
+    const tryResolve = async (endpoint) => {
+      const res = await apiClient.get(endpoint);
+      navigate(`/session/${res.data.id}`);
+    };
+
+    try {
+      const isShort = val.length <= 10;
+      await tryResolve(isShort ? `/sessions/by-short-code/${val}` : `/sessions/${val}`);
+    } catch (_) {
+      try {
+        await tryResolve(val.length <= 10 ? `/sessions/${val}` : `/sessions/by-short-code/${val}`);
+      } catch (_) {
+        alert('Session not found. Check the ID or code and try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 bg-gradient-to-br from-slate-50 via-white to-brand-50">
@@ -31,22 +59,20 @@ export default function Home() {
             Start New Session
           </button>
           
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const id = e.target.sessionId.value;
-            if(id) navigate(`/session/${id}`);
-          }} className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-slate-200 shadow-sm focus-within:ring-2 focus:ring-brand-400 transition-all">
+          <form onSubmit={handleJoin} className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-slate-200 shadow-sm focus-within:ring-2 focus:ring-brand-400 transition-all">
             <input 
-              name="sessionId"
-              type="text" 
-              placeholder="Enter Session ID" 
+              type="text"
+              value={sessionId}
+              onChange={e => setSessionId(e.target.value)}
+              placeholder="Session ID or Short Code"
               className="px-4 py-3 outline-none text-base sm:text-lg w-full sm:w-64 bg-transparent placeholder:text-slate-400"
             />
             <button 
               type="submit"
-              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-base sm:text-lg transition-all active:scale-95 whitespace-nowrap"
+              disabled={loading}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-base sm:text-lg transition-all active:scale-95 whitespace-nowrap disabled:opacity-50"
             >
-              Join <ArrowRight className="inline w-4 h-4 ml-1" />
+              {loading ? 'Joining...' : <>Join <ArrowRight className="inline w-4 h-4 ml-1" /></>}
             </button>
           </form>
         </div>
