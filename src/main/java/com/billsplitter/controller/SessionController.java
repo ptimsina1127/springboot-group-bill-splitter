@@ -34,6 +34,15 @@ public class SessionController {
         }
     }
 
+    @GetMapping("/sessions/by-short-code/{shortCode}")
+    public ResponseEntity<SessionDetailResponse> getSessionByShortCode(@PathVariable String shortCode) {
+        try {
+            return ResponseEntity.ok(sessionService.getSessionByShortCode(shortCode));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PutMapping("/sessions/{sessionId}")
     public ResponseEntity<SessionResponse> updateSession(
             @PathVariable String sessionId,

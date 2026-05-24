@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,12 +27,30 @@ public class SessionService {
     private final ParticipantRepository participantRepository;
     private final ExpenseItemRepository expenseItemRepository;
 
+    private static final String BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    private String generateShortCode() {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            StringBuilder sb = new StringBuilder(5);
+            for (int i = 0; i < 5; i++) {
+                sb.append(BASE62.charAt(RANDOM.nextInt(62)));
+            }
+            String code = sb.toString();
+            if (sessionRepository.findByShortCode(code).isEmpty()) {
+                return code;
+            }
+        }
+        throw new RuntimeException("Failed to generate unique short code after 10 attempts");
+    }
+
     // ── Sessions ─────────────────────────────────────────────────────────────
 
     public SessionResponse createSession(CreateSessionRequest req) {
         Session session = Session.builder()
                 .id(UUID.randomUUID().toString())
                 .name(req.name())
+                .shortCode(generateShortCode())
                 .build();
         sessionRepository.save(session);
 
@@ -47,7 +66,7 @@ public class SessionService {
         }
 
         return new SessionResponse(session.getId(), session.getName(),
-                session.getCreatedAt(), names.size());
+                session.getShortCode(), session.getCreatedAt(), names.size());
     }
 
     @Transactional(readOnly = true)
@@ -58,9 +77,16 @@ public class SessionService {
         List<ExpenseItem> items = expenseItemRepository.findBySessionId(sessionId);
 
         return new SessionDetailResponse(
-                session.getId(), session.getName(), session.getCreatedAt(),
+                session.getId(), session.getName(), session.getShortCode(), session.getCreatedAt(),
                 participants.stream().map(this::toParticipantResponse).toList(),
                 items.stream().map(this::toExpenseItemResponse).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public SessionDetailResponse getSessionByShortCode(String shortCode) {
+        Session session = sessionRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new EntityNotFoundException("Session not found for code: " + shortCode));
+        return getSession(session.getId());
     }
 
     public SessionResponse updateSession(String sessionId, UpdateSessionRequest req) {
@@ -69,7 +95,7 @@ public class SessionService {
         sessionRepository.save(session);
         long count = participantRepository.countBySessionId(sessionId);
         return new SessionResponse(session.getId(), session.getName(),
-                session.getCreatedAt(), (int) count);
+                session.getShortCode(), session.getCreatedAt(), (int) count);
     }
 
     // ── Participants ──────────────────────────────────────────────────────────

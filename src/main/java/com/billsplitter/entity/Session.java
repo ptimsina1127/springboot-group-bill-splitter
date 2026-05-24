@@ -18,6 +18,9 @@ public class Session {
     @Column(nullable = false)
     private String name;
 
+    @Column(name = "short_code", unique = true, nullable = false, length = 8)
+    private String shortCode;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -30,9 +33,10 @@ public class Session {
 
     public Session() {}
 
-    public Session(String id, String name, LocalDateTime createdAt, List<Participant> participants, List<ExpenseItem> expenseItems) {
+    public Session(String id, String name, String shortCode, LocalDateTime createdAt, List<Participant> participants, List<ExpenseItem> expenseItems) {
         this.id = id;
         this.name = name;
+        this.shortCode = shortCode;
         this.createdAt = createdAt;
         this.participants = participants != null ? participants : new ArrayList<>();
         this.expenseItems = expenseItems != null ? expenseItems : new ArrayList<>();
@@ -46,6 +50,8 @@ public class Session {
     public void setId(String id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getShortCode() { return shortCode; }
+    public void setShortCode(String shortCode) { this.shortCode = shortCode; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<Participant> getParticipants() { return participants; }
@@ -67,18 +73,20 @@ public class Session {
     public static class SessionBuilder {
         private String id;
         private String name;
+        private String shortCode;
         private LocalDateTime createdAt;
         private List<Participant> participants;
         private List<ExpenseItem> expenseItems;
 
         public SessionBuilder id(String id) { this.id = id; return this; }
         public SessionBuilder name(String name) { this.name = name; return this; }
+        public SessionBuilder shortCode(String shortCode) { this.shortCode = shortCode; return this; }
         public SessionBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public SessionBuilder participants(List<Participant> participants) { this.participants = participants; return this; }
         public SessionBuilder expenseItems(List<ExpenseItem> expenseItems) { this.expenseItems = expenseItems; return this; }
 
         public Session build() {
-            return new Session(id, name, createdAt, participants, expenseItems);
+            return new Session(id, name, shortCode, createdAt, participants, expenseItems);
         }
     }
 }

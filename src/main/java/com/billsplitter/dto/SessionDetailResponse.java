@@ -6,6 +6,7 @@ import java.util.List;
 public record SessionDetailResponse(
         String id,
         String name,
+        String shortCode,
         LocalDateTime createdAt,
         List<ParticipantResponse> participants,
         List<ExpenseItemResponse> items) {

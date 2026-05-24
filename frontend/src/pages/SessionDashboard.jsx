@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calculator, LogOut, Settings } from 'lucide-react';
+import { Calculator, LogOut, QrCode, X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import apiClient from '../api/client';
 import ParticipantLedger from '../components/ledger/ParticipantLedger';
 import SettlementView from '../components/SettlementView';
@@ -11,6 +12,7 @@ export default function SessionDashboard() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSettlements, setShowSettlements] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const fetchSession = async () => {
     try {
@@ -48,6 +50,16 @@ export default function SessionDashboard() {
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></span>
               <span>{session.participantCount} Participants</span> • 
               <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">ID: {sessionId}</span>
+              {session.shortCode && (
+                <>
+                  <span className="font-mono text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded">
+                    {window.location.origin}/s/{session.shortCode}
+                  </span>
+                  <button onClick={() => setShowQR(true)} className="text-brand-500 hover:text-brand-600 transition-colors">
+                    <QrCode className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </p>
           </div>
           
@@ -97,6 +109,26 @@ export default function SessionDashboard() {
           </div>
         </div>
       </div>
+
+      {showQR && session.shortCode && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowQR(false)}>
+          <div className="bg-white rounded-3xl p-8 text-center max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-black text-slate-900">Share Session</h3>
+              <button onClick={() => setShowQR(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">Scan to join this session</p>
+            <div className="bg-white p-4 rounded-2xl inline-block mx-auto mb-4 shadow-sm border">
+              <QRCodeSVG value={`${window.location.origin}/s/${session.shortCode}`} size={200} />
+            </div>
+            <p className="text-xs font-mono bg-slate-50 px-3 py-2 rounded-lg text-slate-600 break-all">
+              {window.location.origin}/s/{session.shortCode}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
