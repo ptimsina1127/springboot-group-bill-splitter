@@ -12,7 +12,7 @@ export default function SessionDashboard() {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showSettlements, setShowSettlements] = useState(false);
+  const [showSettlements, setShowSettlements] = useState(null);
   const [showQR, setShowQR] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
@@ -20,12 +20,7 @@ export default function SessionDashboard() {
     try {
       const response = await apiClient.get(`/sessions/${sessionId}`);
       setSession(response.data);
-      if (response.data.items.length > 0) {
-        try {
-          await apiClient.post(`/sessions/${sessionId}/calculate`);
-          setShowSettlements(true);
-        } catch { }
-      }
+      setShowSettlements(response.data.items.length > 0);
     } catch (error) {
       alert('Session not found!');
       navigate('/');
