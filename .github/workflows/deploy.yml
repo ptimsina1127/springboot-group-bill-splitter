@@ -17,8 +17,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /home/deploy/app
+            cd /home/ubuntu/springboot-group-bill-splitter
             git pull
-            docker compose build
-            docker compose up -d
-            docker image prune -f
+            sudo docker compose build
+            sudo docker compose up -d
+            sudo docker image prune -f
