@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calculator, LogOut, QrCode, X } from 'lucide-react';
+import { Calculator, LogOut, QrCode, Share2, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import apiClient from '../api/client';
 import ParticipantLedger from '../components/ledger/ParticipantLedger';
 import SettlementView from '../components/SettlementView';
+import ShareModal from '../components/ShareModal';
 
 export default function SessionDashboard() {
   const { sessionId } = useParams();
@@ -13,6 +14,7 @@ export default function SessionDashboard() {
   const [loading, setLoading] = useState(true);
   const [showSettlements, setShowSettlements] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const fetchSession = async () => {
     try {
@@ -55,6 +57,9 @@ export default function SessionDashboard() {
                   <span className="font-mono text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded">
                     {window.location.origin}/s/{session.shortCode}
                   </span>
+                  <button onClick={() => setShowShare(true)} className="text-brand-500 hover:text-brand-600 transition-colors">
+                    <Share2 className="w-4 h-4" />
+                  </button>
                   <button onClick={() => setShowQR(true)} className="text-brand-500 hover:text-brand-600 transition-colors">
                     <QrCode className="w-4 h-4" />
                   </button>
@@ -109,6 +114,10 @@ export default function SessionDashboard() {
           </div>
         </div>
       </div>
+
+      {showShare && session.shortCode && (
+        <ShareModal session={session} onClose={() => setShowShare(false)} />
+      )}
 
       {showQR && session.shortCode && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowQR(false)}>
