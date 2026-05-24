@@ -20,6 +20,12 @@ export default function SessionDashboard() {
     try {
       const response = await apiClient.get(`/sessions/${sessionId}`);
       setSession(response.data);
+      if (response.data.items.length > 0) {
+        try {
+          await apiClient.post(`/sessions/${sessionId}/calculate`);
+          setShowSettlements(true);
+        } catch { }
+      }
     } catch (error) {
       alert('Session not found!');
       navigate('/');
