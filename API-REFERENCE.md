@@ -456,3 +456,5 @@ curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/calcu
 | `DELETE` | `/sessions/{id}/items/{iid}` | Delete expense item |
 | `POST` | `/sessions/{id}/calculate` | Calculate who owes whom |
 | `GET` | `/sessions/{id}/summary` | Get per-person balance summary |
+
+> Last verified: 2026-05-24 12:15 UTC
