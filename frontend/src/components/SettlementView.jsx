@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, TrendingUp, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CheckCircle, RotateCcw } from 'lucide-react';
 import apiClient from '../api/client';
 
-export default function SettlementView({ sessionId, sessionName, onBack }) {
+export default function SettlementView({ sessionId, sessionName }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const calculate = async () => {
+  const calculate = useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.post(`/sessions/${sessionId}/calculate`);
@@ -16,9 +16,9 @@ export default function SettlementView({ sessionId, sessionName, onBack }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
 
-  useEffect(() => { calculate(); }, [sessionId]);
+  useEffect(() => { calculate(); }, [calculate]);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-8 text-slate-400 space-y-3">
@@ -31,7 +31,10 @@ export default function SettlementView({ sessionId, sessionName, onBack }) {
     <div className="flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-base text-slate-900 font-medium">Settlements</h3>
-        <button onClick={onBack} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">Close</button>
+        <button onClick={calculate} className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-semibold transition-colors">
+          <RotateCcw className="w-3.5 h-3.5" />
+          Recalculate
+        </button>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">

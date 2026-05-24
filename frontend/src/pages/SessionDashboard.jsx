@@ -92,7 +92,7 @@ export default function SessionDashboard() {
           <div className="lg:col-span-4">
             {showSettlements ? (
               <div className="sticky top-6 sm:top-10">
-                <SettlementView sessionId={sessionId} sessionName={session.name} onBack={() => setShowSettlements(false)} />
+                <SettlementView sessionId={sessionId} sessionName={session.name} />
               </div>
             ) : (
               <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sm:p-10 text-center shadow-xl shadow-slate-200/50">
