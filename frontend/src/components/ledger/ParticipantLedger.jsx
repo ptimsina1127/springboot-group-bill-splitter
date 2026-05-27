@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Users, Check, X } from 'lucide-react';
 import apiClient from '../../api/client';
 
-export default function ParticipantLedger({ participant, items, sessionId, allParticipants, onUpdate }) {
+export default function ParticipantLedger({ participant, items, sessionId, allParticipants, onUpdate, onEditingChange }) {
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState(participant.name);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -45,6 +45,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       await apiClient.post(`/sessions/${sessionId}/items`, addFormData);
       resetAddForm();
       setShowAddForm(false);
+      onEditingChange(false);
       onUpdate();
     } catch (error) { alert('Error adding expense'); }
   };
@@ -62,16 +63,17 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const startEdit = (expenseId, field, value) => {
     setEditingField({ id: expenseId, field });
     setEditValue(String(value));
+    onEditingChange(true);
   };
 
   const saveEdit = async () => {
     if (!editingField) return;
     const { id, field } = editingField;
     const expense = participantExpenses.find(e => e.id === id);
-    if (!expense) { setEditingField(null); return; }
+    if (!expense) { setEditingField(null); onEditingChange(false); return; }
 
     const val = field === 'amount' ? parseFloat(editValue) : editValue.trim();
-    if (val === '' || isNaN(val)) { setEditingField(null); return; }
+    if (val === '' || isNaN(val)) { setEditingField(null); onEditingChange(false); return; }
 
     const updateData = {
       description: field === 'description' ? val : expense.description,
@@ -85,11 +87,12 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       onUpdate();
     } catch (error) { alert('Error updating expense'); }
     setEditingField(null);
+    onEditingChange(false);
   };
 
   const editKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
-    if (e.key === 'Escape') setEditingField(null);
+    if (e.key === 'Escape') { setEditingField(null); onEditingChange(false); }
   };
 
   // --- Share Modal ---
@@ -126,7 +129,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const removeExpense = async (id) => {
     try {
       await apiClient.delete(`/sessions/${sessionId}/items/${id}`);
-      if (editingField?.id === id) setEditingField(null);
+      if (editingField?.id === id) { setEditingField(null); onEditingChange(false); }
       onUpdate();
     } catch (error) { alert('Error removing expense'); }
   };
@@ -141,11 +144,12 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       } catch (error) { alert('Error updating name'); }
     }
     setEditingName(false);
+    onEditingChange(false);
   };
 
   const nameKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); saveName(); }
-    if (e.key === 'Escape') { setEditedName(participant.name); setEditingName(false); }
+    if (e.key === 'Escape') { setEditedName(participant.name); setEditingName(false); onEditingChange(false); }
   };
 
   const isEditingThis = (id, field) => editingField?.id === id && editingField?.field === field;
@@ -161,7 +165,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
             onBlur={saveName} onKeyDown={nameKeyDown}
             className="font-extrabold text-slate-800 text-xl sm:text-2xl bg-transparent border-b-2 border-brand-500 outline-none flex-1 py-0.5" />
         ) : (
-          <h4 onClick={() => { setEditedName(participant.name); setEditingName(true); }}
+          <h4 onClick={() => { setEditedName(participant.name); setEditingName(true); onEditingChange(true); }}
             className="font-extrabold text-slate-800 text-xl sm:text-2xl cursor-pointer hover:text-brand-600 transition-colors truncate">
             {participant.name}
           </h4>
@@ -257,7 +261,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
               <button type="submit" className="flex-1 bg-brand-500 text-white py-3 rounded-xl font-bold text-sm transition-all hover:bg-brand-600 active:scale-95 shadow-sm flex items-center justify-center gap-1">
                 <Check className="w-4 h-4" /> Add
               </button>
-              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }}
+              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); onEditingChange(false); }}
                 className="px-4 py-3 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-100 transition-all flex items-center justify-center">
                 <X className="w-4 h-4" />
               </button>
@@ -273,7 +277,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
         {/* Plus button at bottom */}
         {!showAddForm && (
           <div className="flex justify-center pt-1">
-            <button onClick={() => { setShowAddForm(true); resetAddForm(); }}
+            <button onClick={() => { setShowAddForm(true); resetAddForm(); onEditingChange(true); }}
               className="flex items-center gap-2 px-6 py-3 bg-white text-brand-500 rounded-xl border-2 border-dashed border-slate-200 hover:border-brand-300 hover:bg-brand-50 transition-all font-bold text-sm active:scale-95">
               <Plus className="w-4 h-4" /> Add Expense
             </button>

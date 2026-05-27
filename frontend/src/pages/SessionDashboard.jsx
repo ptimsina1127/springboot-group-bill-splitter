@@ -13,8 +13,20 @@ export default function SessionDashboard() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSettlements, setShowSettlements] = useState(null);
+  const [editCount, setEditCount] = useState(0);
+  const [settlementDismissed, setSettlementDismissed] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showShare, setShowShare] = useState(false);
+
+  const handleEditingChange = (editing) => {
+    setEditCount(prev => editing ? prev + 1 : Math.max(0, prev - 1));
+    if (editing) setSettlementDismissed(true);
+  };
+
+  const handleRecalculate = () => {
+    setSettlementDismissed(false);
+    setShowSettlements(true);
+  };
 
   const fetchSession = async () => {
     try {
@@ -51,21 +63,14 @@ export default function SessionDashboard() {
             </div>
             <p className="text-sm sm:text-base text-slate-500 font-semibold flex items-center gap-2 flex-wrap">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></span>
-              <span>{session.participantCount} Participants</span> • 
-              <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">ID: {sessionId}</span>
-              {session.shortCode && (
-                <>
-                  <span className="font-mono text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded">
-                    {window.location.origin}/s/{session.shortCode}
-                  </span>
-                  <button onClick={() => setShowShare(true)} className="text-brand-500 hover:text-brand-600 transition-colors">
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setShowQR(true)} className="text-brand-500 hover:text-brand-600 transition-colors">
-                    <QrCode className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+              <span>{session.participantCount} Participants</span>
+              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
+                editCount > 0
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'bg-green-100 text-green-600'
+              }`}>
+                {editCount > 0 ? 'Unsaved' : 'Saved'}
+              </span>
             </p>
           </div>
           
@@ -85,13 +90,52 @@ export default function SessionDashboard() {
                   items={session.items}
                   allParticipants={session.participants}
                   onUpdate={() => fetchSession()}
+                  onEditingChange={handleEditingChange}
                 />
               ))}
             </div>
           </div>
           
-          <div className="lg:col-span-4">
-            {showSettlements ? (
+          <div className="lg:col-span-4 space-y-4">
+            {session.shortCode && (
+              <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-700 mb-3">Share with Friends</h3>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg truncate mr-3">
+                    {window.location.origin}/s/{session.shortCode}
+                  </span>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button onClick={() => setShowShare(true)}
+                      className="p-2.5 text-brand-500 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all"
+                      title="Share">
+                      <Share2 className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setShowQR(true)}
+                      className="p-2.5 text-brand-500 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all"
+                      title="QR Code">
+                      <QrCode className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {settlementDismissed ? (
+              <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sm:p-10 text-center shadow-xl shadow-slate-200/50">
+                <div className="bg-slate-50 w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 rotate-3">
+                  <Calculator className="w-8 h-8 sm:w-10 sm:h-10 text-slate-300" />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mb-2 sm:mb-3">Resettlement needed</h3>
+                <p className="text-sm sm:text-base text-slate-500 mb-6 sm:mb-8 leading-relaxed font-medium">
+                  New changes detected. Click Recalculate to update.
+                </p>
+                <button
+                  onClick={handleRecalculate}
+                  className="w-full bg-slate-900 text-white py-4 sm:py-5 rounded-2xl font-black text-base sm:text-lg transition-all shadow-lg hover:shadow-xl active:scale-95 hover:bg-slate-800"
+                >
+                  Recalculate
+                </button>
+              </div>
+            ) : showSettlements ? (
               <div className="sticky top-6 sm:top-10">
                 <SettlementView sessionId={sessionId} sessionName={session.name} />
               </div>
