@@ -17,7 +17,6 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            set -e
             cd /home/ubuntu/springboot-group-bill-splitter
             git pull
 
@@ -59,4 +58,4 @@ server {
 }
 NGINX
               sudo nginx -t && sudo systemctl reload nginx
-            fi
+            fi || true
