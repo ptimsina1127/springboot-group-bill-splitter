@@ -17,8 +17,28 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/springboot-group-bill-splitter
             git pull
+
             sudo docker compose build
+
+            export FRONTEND_RUNNING="$(sudo docker compose ps -q frontend 2>/dev/null)"
+            if [ -n "$FRONTEND_RUNNING" ]; then
+              sudo docker compose stop frontend
+            fi
+
+            if ! command -v certbot &> /dev/null; then
+              sudo apt-get update -qq && sudo apt-get install -y -qq certbot
+            fi
+            sudo certbot certonly --standalone \
+              -d khoipaisa.duckdns.org -d www.khoipaisa.duckdns.org \
+              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
+              --force-renewal || true
+
+            if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
+              (crontab -l 2>/dev/null; echo "0 3 1 * * cd /home/ubuntu/springboot-group-bill-splitter && sudo docker compose stop frontend && sudo certbot renew --standalone --non-interactive --agree-tos && sudo docker compose up -d") | crontab -
+            fi
+
             sudo docker compose up -d
             sudo docker image prune -f
