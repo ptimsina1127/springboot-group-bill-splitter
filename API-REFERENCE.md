@@ -1,6 +1,6 @@
 # Bill Splitter API Reference
 
-Base URL: `https://khoipaisa.duckdns.org/spring-api`
+Base URL: `https://groupbillsplit.me/spring-api`
 
 All requests and responses use `Content-Type: application/json`.
 
@@ -422,20 +422,20 @@ A mobile app would typically follow this sequence:
 
 ```bash
 # Health check
-curl https://khoipaisa.duckdns.org/spring-api/healthz
+curl https://groupbillsplit.me/spring-api/healthz
 
 # Create a session
-curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions \
+curl -X POST https://groupbillsplit.me/spring-api/sessions \
   -H "Content-Type: application/json" \
   -d '{"name":"Test","participantNames":["Alice","Bob"]}'
 
 # Add an expense item
-curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/items \
+curl -X POST https://groupbillsplit.me/spring-api/sessions/{sessionId}/items \
   -H "Content-Type: application/json" \
   -d '{"paidByParticipantId":"...","description":"Lunch","amount":30.00}'
 
 # Calculate settlements
-curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/calculate
+curl -X POST https://groupbillsplit.me/spring-api/sessions/{sessionId}/calculate
 ```
 
 ---
@@ -457,4 +457,4 @@ curl -X POST https://khoipaisa.duckdns.org/spring-api/sessions/{sessionId}/calcu
 | `POST` | `/sessions/{id}/calculate` | Calculate who owes whom |
 | `GET` | `/sessions/{id}/summary` | Get per-person balance summary |
 
-> Last verified: 2026-05-24 12:15 UTC
+> Last verified: 2026-06-02 (migrated to groupbillsplit.me)

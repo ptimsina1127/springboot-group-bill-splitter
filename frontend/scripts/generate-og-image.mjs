@@ -154,7 +154,7 @@ const html = `<!DOCTYPE html>
       <div class="flow-dot">C</div>
     </div>
   </div>
-  <div class="url">khoipaisa.duckdns.org</div>
+  <div class="url">groupbillsplit.me</div>
 </body>
 </html>`;
 

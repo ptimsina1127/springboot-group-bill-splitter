@@ -2,7 +2,7 @@
 
 Split shared expenses with friends — no awkward math. A modern, responsive full-stack web app built with Spring Boot and React, deployed with Docker on Oracle Cloud free tier.
 
-**Live at:** [https://khoipaisa.duckdns.org](https://khoipaisa.duckdns.org)
+**Live at:** [https://groupbillsplit.me](https://groupbillsplit.me) • [https://www.groupbillsplit.me](https://www.groupbillsplit.me)
 
 ## Tech Stack
 
@@ -11,7 +11,7 @@ Split shared expenses with friends — no awkward math. A modern, responsive ful
 | Backend      | Java 17, Spring Boot 3.1, JPA/Hibernate      |
 | Frontend     | React 18, Vite, Tailwind CSS, Lucide Icons   |
 | Database     | MySQL 8.0                                    |
-| Deployment   | Docker Compose, Nginx reverse proxy, DuckDNS |
+| Deployment   | Docker Compose, Nginx reverse proxy |
 | CI/CD        | GitHub Actions                               |
 | SSL          | Let's Encrypt (auto-renewed via certbot)     |
 
@@ -46,7 +46,7 @@ npm run dev
 ```
                          Internet
                             |
-                      DuckDNS (khoipaisa.duckdns.org)
+                      groupbillsplit.me
                             |
                      Oracle Cloud VM
                      (REDACTED)
@@ -74,7 +74,7 @@ npm run dev
 - **Provider:** Let's Encrypt via certbot
 - **Auto-renewal:** certbot systemd timer (twice daily)
 - **Deploy hook:** Reloads Nginx after renewal
-- **Domain:** `khoipaisa.duckdns.org` (DuckDNS free dynamic DNS)
+- **Domain:** `groupbillsplit.me` (Namecheap)
 
 ---
 
@@ -183,5 +183,5 @@ Or use any GUI tool (MySQL Workbench, DBeaver, TablePlus) pointing to `localhost
 - **Swap:** 2 GB swapfile to prevent OOM during Docker builds
 - **Nginx:** `proxy_http_version 1.1` required for proper POST body forwarding
 - **Backend startup:** ~60s (Hibernate schema validation + DB health checks)
-- **DuckDNS:** 5-minute cron job updates IP on `khoipaisa.duckdns.org`
+- **DNS:** A records for `@` and `www` point to `REDACTED` (Namecheap)
 - **Let's Encrypt:** `certbot.timer` runs twice daily; deploy hook reloads Nginx

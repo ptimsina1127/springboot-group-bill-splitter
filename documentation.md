@@ -1,9 +1,9 @@
 # Bill Splitter Full Build Documentation
 
-A complete walkthrough of building, containerizing, deploying, and securing a full-stack Spring Boot + React application on Oracle Cloud free tier with Docker, DuckDNS, Let's Encrypt, and GitHub Actions CI/CD.
+A complete walkthrough of building, containerizing, deploying, and securing a full-stack Spring Boot + React application on Oracle Cloud free tier with Docker, Let's Encrypt, and GitHub Actions CI/CD.
 
 > **Author:** Pravat K Timsina
-> **Live app:** [https://khoipaisa.duckdns.org](https://khoipaisa.duckdns.org)
+> **Live app:** [https://groupbillsplit.me](https://groupbillsplit.me) • [https://www.groupbillsplit.me](https://www.groupbillsplit.me)
 > **Source:** https://github.com/ptimsina1127/springboot-group-bill-splitter
 
 ---
@@ -15,7 +15,7 @@ A complete walkthrough of building, containerizing, deploying, and securing a fu
 3. [Local Development Setup](#3-local-development-setup)
 4. [Docker Containerization](#4-docker-containerization)
 5. [Production Deployment — Oracle Cloud](#5-production-deployment--oracle-cloud-free-tier)
-6. [SSL Certificate — Let's Encrypt + DuckDNS](#6-ssl-certificate--lets-encrypt--duckdns)
+6. [SSL Certificate — Let's Encrypt + Custom Domain](#6-ssl-certificate--lets-encrypt--custom-domain)
 7. [Fixes & Debugging (Key Lessons Learned)](#7-fixes--debugging-key-lessons-learned)
 8. [Database Access via SSH Tunnel](#8-database-access-via-ssh-tunnel)
 9. [CI/CD with GitHub Actions](#9-cicd-with-github-actions)
@@ -40,7 +40,7 @@ A web app that lets groups of people split shared expenses. Create a session, ad
 | Frontend     | React 18, Vite, Tailwind CSS, Lucide React Icons|
 | Database     | MySQL 8.0                                       |
 | Deployment   | Docker Compose, Nginx reverse proxy             |
-| DNS          | DuckDNS (free dynamic DNS)                      |
+| DNS          | Namecheap (custom domain: groupbillsplit.me)    |
 | SSL          | Let's Encrypt (certbot)                         |
 | CI/CD        | GitHub Actions                                  |
 | Cloud        | Oracle Cloud free tier VM (1 GB RAM, 1 OCPU)   |
@@ -292,17 +292,17 @@ CMD ["nginx", "-g", "daemon off;"]
 # HTTP -> HTTPS redirect
 server {
     listen 80;
-    server_name khoipaisa.duckdns.org;
+    server_name groupbillsplit.me;
     return 301 https://$server_name$request_uri;
 }
 
 # HTTPS server
 server {
     listen 443 ssl http2;
-    server_name khoipaisa.duckdns.org;
+    server_name groupbillsplit.me;
 
-    ssl_certificate /etc/letsencrypt/live/khoipaisa.duckdns.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/khoipaisa.duckdns.org/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/groupbillsplit.me/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/groupbillsplit.me/privkey.pem;
 
     root /usr/share/nginx/html;
     index index.html;
@@ -424,27 +424,15 @@ Watch for the backend to finish starting (~60 seconds for Hibernate + DB health 
 
 ---
 
-## 6. SSL Certificate — Let's Encrypt + DuckDNS
+## 6. SSL Certificate — Let's Encrypt + Custom Domain
 
-### Why DuckDNS?
+### Domain
 
-Oracle Cloud free tier VMs have dynamic IPs (they can change on reboot). DuckDNS provides a free domain name (`khoipaisa.duckdns.org`) with a cron job that auto-updates the IP every 5 minutes.
+The app runs on `groupbillsplit.me` (registered on Namecheap). DNS A records point both `@` and `www` to the server IP `<old-server-ip>`.
 
-### DuckDNS Setup
+### DuckDNS (migrated)
 
-```bash
-# Create the update script
-cat > ~/duckdns.sh << 'EOF'
-#!/bin/sh
-echo url="https://www.duckdns.org/update?domains=khoipaisa&token=YOUR_TOKEN&ip=" | curl -k -o ~/duckdns.log -s
-EOF
-chmod +x ~/duckdns.sh
-
-# Add to crontab (runs every 5 minutes)
-echo "*/5 * * * * /home/ubuntu/duckdns.sh" | crontab -
-```
-
-Get your token from https://www.duckdns.org after signing in with GitHub.
+Originally the app used DuckDNS (`groupbillsplit.duckdns.org`) to handle the Oracle Cloud VM's dynamic IP. The DuckDNS cron job has been removed in favor of a static IP and custom domain. The cron cleanup is handled automatically in the deploy script.
 
 ### Let's Encrypt Certificate
 
@@ -459,7 +447,7 @@ docker compose stop frontend
 sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
 
 # Get the certificate
-sudo certbot certonly --standalone -d khoipaisa.duckdns.org \
+sudo certbot certonly --standalone -d groupbillsplit.me \
   --non-interactive --agree-tos -m your@email.com --force-renewal
 
 # Clean up iptables
@@ -469,14 +457,14 @@ sudo iptables -D INPUT -p tcp --dport 80 -j ACCEPT
 docker compose up -d frontend
 ```
 
-### Fix Symlinks for Nginx
+### Fix Symlinks for Nginx (old DuckDNS setup)
 
-Nginx config expects certs at `/etc/letsencrypt/live/khoipaisa.duckdns.org/`. If certbot created a `-0001` directory (because self-signed files already existed), fix it:
+Nginx config expects certs at `/etc/letsencrypt/live/{domain}/`. If certbot created a `-0001` directory (because self-signed files already existed), fix it:
 
 ```bash
-sudo rm -rf /etc/letsencrypt/live/khoipaisa.duckdns.org
-sudo ln -s /etc/letsencrypt/live/khoipaisa.duckdns.org-0001 \
-           /etc/letsencrypt/live/khoipaisa.duckdns.org
+sudo rm -rf /etc/letsencrypt/live/groupbillsplit.me
+sudo ln -s /etc/letsencrypt/live/groupbillsplit.me-0001 \
+           /etc/letsencrypt/live/groupbillsplit.me
 ```
 
 ### Auto-Renewal
@@ -760,10 +748,10 @@ git diff                            # See uncommitted changes
 
 ```bash
 # Get certificate
-sudo certbot certonly --standalone -d khoipaisa.duckdns.org
+sudo certbot certonly --standalone -d groupbillsplit.me
 
 # Check expiry
-sudo openssl x509 -noout -dates -in /etc/letsencrypt/live/khoipaisa.duckdns.org/fullchain.pem
+sudo openssl x509 -noout -dates -in /etc/letsencrypt/live/groupbillsplit.me/fullchain.pem
 
 # Test renewal
 sudo certbot renew --dry-run
@@ -778,9 +766,9 @@ sudo certbot renew --dry-run
                           │     Internet        │
                           └─────────┬───────────┘
                                     │
-                          https://khoipaisa.duckdns.org
+                          https://groupbillsplit.me
                                     │
-                          DuckDNS resolves to
+                           DNS resolves to
                           ┌──────────────────┐
                           │  <old-server-ip>    │
                           │  (Oracle Cloud VM)│
@@ -837,7 +825,7 @@ sudo certbot renew --dry-run
 | **SSL / TLS** | Encryption protocols for HTTPS connections |
 | **Let's Encrypt** | Free, automated certificate authority providing SSL certs |
 | **Certbot** | Tool that automates obtaining and renewing Let's Encrypt certs |
-| **DuckDNS** | Free dynamic DNS service — maps a fixed domain name to a changing IP address |
+| **DuckDNS** | Free dynamic DNS service — previously used before migrating to a custom domain |
 | **Multi-stage build** | Dockerfile technique — uses one image to build, then copies only artifacts to a smaller final image |
 | **GitHub Actions** | CI/CD service — automatically runs workflows when code is pushed |
 | **SSH tunnel** | Encrypted connection that forwards a local port to a remote server through SSH |
