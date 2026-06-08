@@ -17,23 +17,22 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/springboot-group-bill-splitter
-            echo "=== GIT STATUS ==="
-            git log --oneline -3
+            echo "=== GIT ==="
+            git log --oneline -1
             git pull
-            echo "=== AFTER PULL ==="
-            git log --oneline -3
-            echo "=== CHECK INDEX.HTML ==="
-            head -10 frontend/index.html
+            echo "=== HEAD ==="
+            git log --oneline -1
 
-            echo "=== BUILDING FRONTEND ONLY ==="
-            sudo docker compose build --no-cache frontend
-            echo "=== BUILD EXIT CODE: $? ==="
-            echo "=== RESTARTING FRONTEND ==="
-            sudo docker compose up -d --force-recreate frontend
-            echo "=== VERIFY CONTAINER ==="
-            sleep 3
-            sudo docker compose exec -T frontend cat /usr/share/nginx/html/index.html | head -10
+            echo "=== BUILD ==="
+            sudo docker compose -p springboot-group-bill-splitter build --no-cache frontend
+
+            echo "=== RESTART ==="
+            sudo docker compose -p springboot-group-bill-splitter down
+            sudo docker compose -p springboot-group-bill-splitter up -d
+
+            echo "=== DONE ==="
 
             if ! command -v certbot &> /dev/null; then
               sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
