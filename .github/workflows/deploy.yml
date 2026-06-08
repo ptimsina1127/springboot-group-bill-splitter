@@ -22,75 +22,19 @@ jobs:
           npm run build
         working-directory: frontend
 
-      - name: Copy dist to server via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: frontend/dist/*
-          target: /home/ubuntu/frontend-dist
-          strip_components: 2
-
-      - name: Deploy to container
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            echo "=== GIT PULL ==="
-            cd /home/ubuntu/springboot-group-bill-splitter && git pull
-
-            echo "=== COPY TO CONTAINER ==="
-            sudo docker cp /home/ubuntu/frontend-dist/. bill-splitter-frontend:/usr/share/nginx/html/
-
-            echo "=== RELOAD NGINX ==="
-            sudo docker exec bill-splitter-frontend nginx -s reload || echo "reload failed, trying restart"
-            sudo docker restart bill-splitter-frontend || true
-
-            echo "=== CLEANUP ==="
-            rm -rf /home/ubuntu/frontend-dist
-
-            echo "=== HOST NGINX ==="
-            if [ -d /etc/nginx/sites-enabled ]; then
-              printf '%s\n' \
-                'server {' \
-                '    listen 80;' \
-                '    server_name groupbillsplit.me www.groupbillsplit.me;' \
-                '    return 301 https://$host$request_uri;' \
-                '}' \
-                'server {' \
-                '    listen 443 ssl http2;' \
-                '    server_name groupbillsplit.me www.groupbillsplit.me;' \
-                '    ssl_certificate /etc/letsencrypt/live/groupbillsplit.me/fullchain.pem;' \
-                '    ssl_certificate_key /etc/letsencrypt/live/groupbillsplit.me/privkey.pem;' \
-                '    ssl_protocols TLSv1.2 TLSv1.3;' \
-                '    ssl_ciphers HIGH:!aNULL:!MD5;' \
-                '    location / {' \
-                '        proxy_pass https://127.0.0.1:3443;' \
-                '        proxy_ssl_verify off;' \
-                '        proxy_set_header Host groupbillsplit.me;' \
-                '        proxy_set_header X-Real-IP $remote_addr;' \
-                '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-                '        proxy_set_header X-Forwarded-Proto https;' \
-                '    }' \
-                '}' \
-                | sudo tee /etc/nginx/sites-enabled/groupbillsplit > /dev/null
-            fi
-            sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null || true
-
-            if ! command -v certbot &> /dev/null; then
-              sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
-            fi
-            sudo certbot --nginx \
-              -d groupbillsplit.me -d www.groupbillsplit.me \
-              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
-              --force-renewal || true
-
-            if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
-              (crontab -l 2>/dev/null; echo "0 3 1 * * sudo certbot renew --nginx --non-interactive --agree-tos") | crontab -
-            fi
-
-            sudo docker image prune -f || true
+      - name: Deploy via SSH
+        shell: bash
+        run: |
+          set -e
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          tar czf - -C frontend/dist . | \
+          ssh -o StrictHostKeyChecking=no -i /tmp/ssh_key \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "set -e
+             mkdir -p /tmp/frontend-deploy
+             tar xzf - -C /tmp/frontend-deploy
+             sudo docker cp /tmp/frontend-deploy/. bill-splitter-frontend:/usr/share/nginx/html/
+             sudo docker exec bill-splitter-frontend nginx -s reload 2>/dev/null || sudo docker restart bill-splitter-frontend
+             rm -rf /tmp/frontend-deploy"
+          rm -f /tmp/ssh_key
