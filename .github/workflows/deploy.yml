@@ -10,7 +10,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+        working-directory: frontend
+
+      - name: Copy dist to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: frontend/dist/*
+          target: /home/ubuntu/frontend-dist
+          strip_components: 2
+
+      - name: Deploy to container
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -18,43 +40,20 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/springboot-group-bill-splitter || { echo "FAIL: cd failed"; exit 1; }
-            echo "=== GIT ==="
-            git log --oneline -1
-            git pull || { echo "FAIL: git pull failed"; exit 1; }
-            echo "=== HEAD ==="
-            git log --oneline -1
-            echo "=== FRONTEND FILES ==="
-            ls -la frontend/index.html frontend/Dockerfile frontend/package.json
-            head -3 frontend/index.html
+            echo "=== GIT PULL ==="
+            cd /home/ubuntu/springboot-group-bill-splitter && git pull
 
-            echo "=== BUILD ==="
-            cd frontend
-            sudo docker build -t frontend-new --no-cache . 2>&1 || { echo "FAIL: docker build failed"; exit 1; }
-            echo "=== BUILT SUCCESSFULLY ==="
-            cd ..
-            echo "=== REPLACE CONTAINER ==="
-            sudo docker stop bill-splitter-frontend || true
-            sudo docker rm bill-splitter-frontend || true
-            sudo docker run -d --name bill-splitter-frontend --network springboot-group-bill-splitter_default -p 3443:443 -p 3000:80 -v /etc/letsencrypt:/etc/letsencrypt:ro frontend-new 2>&1 || { echo "FAIL: docker run failed"; exit 1; }
-            echo "=== DONE ==="
+            echo "=== COPY TO CONTAINER ==="
+            sudo docker cp /home/ubuntu/frontend-dist/. bill-splitter-frontend:/usr/share/nginx/html/
 
-            if ! command -v certbot &> /dev/null; then
-              sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
-            fi
-            sudo certbot --nginx \
-              -d groupbillsplit.me -d www.groupbillsplit.me \
-              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
-              --force-renewal || true
+            echo "=== RELOAD NGINX ==="
+            sudo docker exec bill-splitter-frontend nginx -s reload || echo "reload failed, trying restart"
+            sudo docker restart bill-splitter-frontend || true
 
-            if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
-              (crontab -l 2>/dev/null; echo "0 3 1 * * sudo certbot renew --nginx --non-interactive --agree-tos") | crontab -
-            fi
+            echo "=== CLEANUP ==="
+            rm -rf /home/ubuntu/frontend-dist
 
-            if crontab -l 2>/dev/null | grep -q "duckdns"; then
-              crontab -l 2>/dev/null | grep -v "duckdns" | crontab -
-            fi
-
+            echo "=== HOST NGINX ==="
             if [ -d /etc/nginx/sites-enabled ]; then
               printf '%s\n' \
                 'server {' \
@@ -80,6 +79,18 @@ jobs:
                 '}' \
                 | sudo tee /etc/nginx/sites-enabled/groupbillsplit > /dev/null
             fi
-            sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null || sudo systemctl restart nginx 2>/dev/null || true
+            sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null || true
 
-            sudo docker image prune -f
+            if ! command -v certbot &> /dev/null; then
+              sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
+            fi
+            sudo certbot --nginx \
+              -d groupbillsplit.me -d www.groupbillsplit.me \
+              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
+              --force-renewal || true
+
+            if ! crontab -l 2>/dev/null | grep -q "certbot renew"; then
+              (crontab -l 2>/dev/null; echo "0 3 1 * * sudo certbot renew --nginx --non-interactive --agree-tos") | crontab -
+            fi
+
+            sudo docker image prune -f || true
