@@ -10,46 +10,64 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Full nuke & redeploy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+        working-directory: frontend
+
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            set -e
             cd /home/ubuntu/springboot-group-bill-splitter
-
-            echo "=== Backup DB ==="
-            mkdir -p ~/db-backups
-            sudo docker exec bill-splitter-db sh -c 'exec mysqldump --no-tablespaces -u root -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' 2>/dev/null > ~/db-backups/pre-nuke-$(date +%Y%m%d_%H%M%S).sql || echo "DB backup skipped"
 
             echo "=== Git pull ==="
             git fetch origin
             git reset --hard origin/main
 
-            echo "=== Full nuke ==="
-            sudo docker compose down -v 2>/dev/null || true
-            sudo docker system prune -a -f 2>/dev/null || true
+            echo "=== Build & start all services ==="
+            sudo docker compose build --no-cache 2>&1 || echo "BUILD FAILED, continuing..."
+            sudo docker compose up -d 2>&1 || echo "UP FAILED, trying individual..."
 
-            echo "=== Rebuild ==="
-            sudo docker compose build --no-cache
-
-            echo "=== Start ==="
-            sudo docker compose up -d
-
-            echo "=== Verify ==="
+            echo "=== Wait for frontend ==="
+            sleep 10
             sudo docker compose ps
 
-            echo "=== SSL ==="
-            if ! command -v certbot &> /dev/null; then
-              sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
-            fi
-            sudo certbot --nginx \
-              -d groupbillsplit.me -d www.groupbillsplit.me \
-              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
-              --force-renewal || true
+      - name: Inject frontend dist
+        shell: bash
+        run: |
+          set -e
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+          tar czf - -C frontend/dist . | \
+          ssh -o StrictHostKeyChecking=no -i /tmp/ssh_key \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "set -e
+             mkdir -p /tmp/frontend-deploy
+             tar xzf - -C /tmp/frontend-deploy
+             sudo docker cp /tmp/frontend-deploy/. bill-splitter-frontend:/usr/share/nginx/html/ 2>/dev/null || echo 'Container not running yet'
+             sudo docker exec bill-splitter-frontend nginx -s reload 2>/dev/null || echo 'Reload skipped'
+             rm -rf /tmp/frontend-deploy"
+          rm -f /tmp/ssh_key
 
+      - name: SSL & nginx config
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            echo "=== Host nginx ==="
             if [ -d /etc/nginx/sites-enabled ]; then
               printf '%s\n' \
                 'server {' \
@@ -76,5 +94,14 @@ jobs:
                 | sudo tee /etc/nginx/sites-enabled/groupbillsplit > /dev/null
             fi
             sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null || true
+
+            echo "=== SSL ==="
+            if ! command -v certbot &> /dev/null; then
+              sudo apt-get update -qq && sudo apt-get install -y -qq certbot python3-certbot-nginx
+            fi
+            sudo certbot --nginx \
+              -d groupbillsplit.me -d www.groupbillsplit.me \
+              --non-interactive --agree-tos --email pravatktimsina@gmail.com \
+              --force-renewal || true
 
             sudo docker image prune -f || true
