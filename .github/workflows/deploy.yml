@@ -26,12 +26,13 @@ jobs:
             echo "=== CHECK INDEX.HTML ==="
             head -10 frontend/index.html
 
-            echo "=== BUILDING ==="
-            sudo docker compose build --no-cache
-            echo "=== RESTARTING ==="
-            sudo docker compose down
-            sudo docker compose up -d
+            echo "=== BUILDING FRONTEND ONLY ==="
+            sudo docker compose build --no-cache frontend
+            echo "=== BUILD EXIT CODE: $? ==="
+            echo "=== RESTARTING FRONTEND ==="
+            sudo docker compose up -d --force-recreate frontend
             echo "=== VERIFY CONTAINER ==="
+            sleep 3
             sudo docker compose exec -T frontend cat /usr/share/nginx/html/index.html | head -10
 
             if ! command -v certbot &> /dev/null; then
