@@ -18,20 +18,25 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/springboot-group-bill-splitter
+            cd /home/ubuntu/springboot-group-bill-splitter || { echo "FAIL: cd failed"; exit 1; }
             echo "=== GIT ==="
             git log --oneline -1
-            git pull
+            git pull || { echo "FAIL: git pull failed"; exit 1; }
             echo "=== HEAD ==="
             git log --oneline -1
+            echo "=== FRONTEND FILES ==="
+            ls -la frontend/index.html frontend/Dockerfile frontend/package.json
+            head -3 frontend/index.html
 
             echo "=== BUILD ==="
-            sudo docker compose -p springboot-group-bill-splitter build --no-cache frontend
-
-            echo "=== RESTART ==="
-            sudo docker compose -p springboot-group-bill-splitter down
-            sudo docker compose -p springboot-group-bill-splitter up -d
-
+            cd frontend
+            sudo docker build -t frontend-new --no-cache . 2>&1 || { echo "FAIL: docker build failed"; exit 1; }
+            echo "=== BUILT SUCCESSFULLY ==="
+            cd ..
+            echo "=== REPLACE CONTAINER ==="
+            sudo docker stop bill-splitter-frontend || true
+            sudo docker rm bill-splitter-frontend || true
+            sudo docker run -d --name bill-splitter-frontend --network springboot-group-bill-splitter_default -p 3443:443 -p 3000:80 -v /etc/letsencrypt:/etc/letsencrypt:ro frontend-new 2>&1 || { echo "FAIL: docker run failed"; exit 1; }
             echo "=== DONE ==="
 
             if ! command -v certbot &> /dev/null; then
