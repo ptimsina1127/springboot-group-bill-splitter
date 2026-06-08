@@ -20,7 +20,7 @@ jobs:
             cd /home/ubuntu/springboot-group-bill-splitter
             git pull
 
-            sudo docker compose build
+            sudo docker compose build --no-cache
             sudo docker compose up -d
 
             if ! command -v certbot &> /dev/null; then
