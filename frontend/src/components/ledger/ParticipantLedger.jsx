@@ -176,7 +176,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
             className="font-extrabold text-slate-800 text-xl sm:text-2xl bg-transparent border-b-2 border-brand-500 outline-none flex-1 py-0.5" />
         ) : (
           <h4 onClick={() => { setEditedName(participant.name); setEditingName(true); onEditingChange(true); }}
-            className="font-extrabold text-slate-800 text-xl sm:text-2xl cursor-pointer hover:text-brand-600 transition-colors truncate">
+            className={`cursor-pointer hover:text-brand-600 transition-colors ${participant.name.length > 10 ? 'font-bold text-lg sm:text-xl' : 'font-extrabold text-xl sm:text-2xl'}`}>
             {participant.name}
           </h4>
         )}
@@ -236,7 +236,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                                 <label key={p.id} className="flex items-center gap-1.5 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
                                   <input type="checkbox" checked={checked} onChange={() => toggleShareExpense(p.id)}
                                     className="w-4 h-4 rounded text-brand-500 focus:ring-brand-500" />
-                                  <span className="text-sm font-semibold text-slate-700 truncate">{p.name}</span>
+                                  <span className={`${p.name.length > 12 ? 'text-xs font-semibold' : 'text-sm font-semibold'} text-slate-700`}>{p.name}</span>
                                 </label>
                               );
                             })}

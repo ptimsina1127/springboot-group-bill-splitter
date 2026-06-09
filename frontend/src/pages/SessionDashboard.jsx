@@ -74,9 +74,14 @@ export default function SessionDashboard() {
             </p>
           </div>
           
-          <button onClick={() => navigate('/')} className="p-3 sm:p-4 text-slate-400 hover:text-red-500 bg-white rounded-2xl border border-slate-200 transition-all shadow-sm hover:shadow-md active:scale-95 flex-shrink-0">
-            <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
+          <div className="relative group">
+            <button onClick={() => navigate('/')} className="p-3 sm:p-4 text-slate-400 hover:text-red-500 bg-white rounded-2xl border border-slate-200 transition-all shadow-sm hover:shadow-md active:scale-95 flex-shrink-0">
+              <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg z-50">
+              Exit to Home
+            </div>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
