@@ -82,7 +82,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     if (!expense) { setEditingField(null); onEditingChange(false); return; }
 
     const val = field === 'amount' ? parseFloat(editValue) : editValue.trim();
-    if (val === '' || isNaN(val)) { setEditingField(null); onEditingChange(false); return; }
+    if (val === '' || (field === 'amount' && isNaN(val))) { setEditingField(null); onEditingChange(false); return; }
 
     const updateData = {
       description: field === 'description' ? val : expense.description,
@@ -111,8 +111,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     const btnRect = e.currentTarget.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const spaceBelow = cardRect.bottom - btnRect.bottom;
-    const cols = allParticipants.length < 20 ? 4 : 5;
-    const estHeight = Math.ceil(allParticipants.length / cols) * 44 + 40;
+    const estHeight = Math.ceil(allParticipants.length / 3) * 44 + 40;
     setShareAbove(spaceBelow < estHeight);
     setShareOpen(expenseId);
   };
@@ -280,8 +279,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                   const btnRect = e.currentTarget.getBoundingClientRect();
                   const cardRect = card.getBoundingClientRect();
                   const spaceBelow = cardRect.bottom - btnRect.bottom;
-                  const cols = allParticipants.length < 20 ? 4 : 5;
-                  const estHeight = Math.ceil(allParticipants.length / cols) * 44 + 40;
+                  const estHeight = Math.ceil(allParticipants.length / 3) * 44 + 40;
                   setAddShareAbove(spaceBelow < estHeight);
                   setAddShareOpen(true);
                 }}
