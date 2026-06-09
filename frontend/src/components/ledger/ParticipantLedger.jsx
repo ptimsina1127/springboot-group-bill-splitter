@@ -231,7 +231,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                         <div ref={shareRef}
                           className={`absolute z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-72 ${shareAbove ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
-                          <div className={`grid gap-1 ${allParticipants.length < 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+                          <div className="grid gap-1 grid-cols-3">
                             {allParticipants.map(p => {
                               const checked = exp.sharedWithParticipantIds.includes(p.id);
                               return (
@@ -295,7 +295,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                 <div ref={addShareRef}
                   className={`absolute z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-72 ${addShareAbove ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
-                  <div className={`grid gap-1 ${allParticipants.length < 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+                  <div className="grid gap-1 grid-cols-3">
                     {allParticipants.map(p => (
                       <label key={p.id} className="flex items-center gap-1.5 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
                         <input type="checkbox" checked={addFormData.sharedWithParticipantIds.includes(p.id)}
