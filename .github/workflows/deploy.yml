@@ -35,6 +35,12 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
+            echo "=== DIAGNOSTIC: Build frontend only ==="
+            cd frontend
+            sudo docker build --no-cache --progress=plain -t test-frontend . 2>&1 | tail -100 || echo "FRONTEND BUILD FAILED"
+            cd ..
+            rm -f frontend/Dockerfile.saved 2>/dev/null || true
+
             echo "=== Build & start all services ==="
             sudo docker compose build --no-cache 2>&1 || echo "BUILD FAILED, continuing..."
             sudo docker compose up -d 2>&1 || echo "UP FAILED, trying individual..."
