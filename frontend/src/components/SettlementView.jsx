@@ -1,8 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle, RotateCcw, Receipt, ArrowRight, DollarSign } from 'lucide-react';
 import apiClient from '../api/client';
+import { getColor } from '../utils/avatarColor';
 
-export default function SettlementView({ sessionId, sessionName }) {
+function SkeletonRow() {
+  return (
+    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100 animate-pulse">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="w-6 h-6 bg-slate-200 rounded-full flex-shrink-0" />
+        <div className="h-3 bg-slate-200 rounded w-16" />
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <div className="h-3 bg-slate-200 rounded w-6" />
+        <div className="h-4 bg-slate-200 rounded w-10" />
+        <div className="h-3 bg-slate-200 rounded w-6" />
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 bg-slate-200 rounded w-12" />
+          <div className="w-6 h-6 bg-slate-200 rounded-full flex-shrink-0" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SettlementView({ sessionId, sessionName, itemCount }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,57 +42,91 @@ export default function SettlementView({ sessionId, sessionName }) {
   useEffect(() => { calculate(); }, [calculate]);
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center py-8 text-slate-400 space-y-3">
-      <div className="animate-spin rounded-full h-8 w-8 border-3 border-brand-500 border-t-transparent"></div>
-      <p className="text-sm text-slate-400">Optimizing debts...</p>
+    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-green-50 border-b border-green-100 rounded-t-[2rem]">
+        <div className="flex items-center gap-2 animate-pulse">
+          <div className="w-4 h-4 bg-green-200 rounded" />
+          <div className="h-3 bg-green-200 rounded w-16" />
+        </div>
+        <div className="flex items-center gap-2 animate-pulse">
+          <div className="h-3 bg-green-200 rounded w-20" />
+          <div className="h-3 bg-green-200 rounded w-24" />
+        </div>
+      </div>
+      <div className="p-3 sm:p-4 space-y-2">
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+      </div>
     </div>
   );
 
+  const debts = result?.debts ?? [];
+  const totalExpenses = result?.totalExpenses || '0.00';
+
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base text-slate-900 font-medium">Settlements</h3>
-        <button onClick={calculate} className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-semibold transition-colors">
-          <RotateCcw className="w-3.5 h-3.5" />
-          Recalculate
-        </button>
+      <h3 className="text-sm sm:text-base text-slate-900 font-bold mb-3">Settlements</h3>
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-green-50 border-b border-green-100">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+          <span className="text-xs font-bold text-green-800 uppercase tracking-wider">Balanced</span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1">
+            <Receipt className="w-3 h-3" />
+            <span>{itemCount ?? '?'} Items</span>
+          </span>
+          <span className="flex items-center gap-1 text-slate-700 font-semibold">
+            <DollarSign className="w-3 h-3" />
+            <span>{totalExpenses}</span>
+          </span>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-4 py-2.5 bg-green-50 border-b border-green-100">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-800">Balanced</span>
-          </div>
-          <span className="text-xs text-slate-500">Total: <span className="text-slate-700 font-medium">${result?.totalExpenses || '0.00'}</span></span>
-        </div>
-
-        <div className="p-3 space-y-1.5">
-          {result?.debts.length > 0 ? (
-            result.debts.map((debt, i) => (
-              <div key={i} className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg border border-slate-100">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="w-6 h-6 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0">
-                    {debt.fromParticipantName[0].toUpperCase()}
-                  </div>
-                  <span className="text-xs text-slate-700 truncate">{debt.fromParticipantName}</span>
+      <div className="p-3 sm:p-4 space-y-1.5">
+        {debts.length > 0 ? debts.map((debt, i) => {
+          const fromColor = getColor(debt.fromParticipantName);
+          const toColor = getColor(debt.toParticipantName);
+          return (
+            <div key={i} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <div style={{ backgroundColor: fromColor }}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-700 flex-shrink-0">
+                  {debt.fromParticipantName[0].toUpperCase()}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">pays</span>
-                  <span className="text-sm font-medium text-brand-600">${debt.amount}</span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">to</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-slate-700 truncate max-w-[80px]">{debt.toParticipantName}</span>
-                    <div className="w-6 h-6 bg-brand-500 text-white rounded-full flex items-center justify-center text-[10px] font-medium flex-shrink-0">
-                      {debt.toParticipantName[0].toUpperCase()}
-                    </div>
+                <span className="text-xs font-medium text-slate-600 truncate">{debt.fromParticipantName}</span>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <span className="text-[10px] text-slate-400 font-medium">pays</span>
+                <span className="text-sm font-semibold text-brand-600 tabular-nums">${debt.amount}</span>
+                <ArrowRight className="w-3 h-3 text-slate-300" />
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs font-medium text-slate-600 truncate">{debt.toParticipantName}</span>
+                  <div style={{ backgroundColor: toColor }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-700 flex-shrink-0">
+                    {debt.toParticipantName[0].toUpperCase()}
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-slate-400 text-xs">Everything is already settled!</div>
-          )}
+            </div>
+          );
+        }) : (
+          <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+            <CheckCircle className="w-8 h-8 text-green-300 mb-2" />
+            <p className="text-xs font-semibold">Everything is already settled!</p>
+          </div>
+        )}
+
+        {debts.length > 0 && (
+          <button onClick={calculate}
+            className="w-full mt-2 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-slate-200 bg-white text-slate-500 hover:border-brand-300 hover:text-brand-500 hover:bg-brand-50 transition-all font-bold text-xs active:scale-95">
+            <RotateCcw className="w-3.5 h-3.5" />
+            Recalculate
+          </button>
+        )}
         </div>
       </div>
     </div>

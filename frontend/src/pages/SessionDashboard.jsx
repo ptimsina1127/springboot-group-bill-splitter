@@ -28,6 +28,23 @@ export default function SessionDashboard() {
     setShowSettlements(true);
   };
 
+  const statusInfo = {
+    ACTIVE: { label: 'Editing in progress — click to mark ready for review', next: 'REVIEW', color: 'bg-brand-100 text-brand-600' },
+    REVIEW: { label: 'Ready to settle — click to mark as settled', next: 'SETTLED', color: 'bg-amber-100 text-amber-600' },
+    SETTLED: { label: 'All paid up — click to archive', next: 'ARCHIVED', color: 'bg-green-100 text-green-600' },
+    ARCHIVED: { label: 'Session closed — click to reopen as active', next: 'ACTIVE', color: 'bg-slate-100 text-slate-500' },
+  };
+
+  const cycleStatus = async () => {
+    const order = ['ACTIVE', 'REVIEW', 'SETTLED', 'ARCHIVED'];
+    const stat = session?.status || 'ACTIVE';
+    const next = stat === 'ARCHIVED' ? 'ACTIVE' : order[order.indexOf(stat) + 1];
+    try {
+      await apiClient.put(`/sessions/${sessionId}`, { name: session.name, status: next });
+      setSession(prev => ({ ...prev, status: next }));
+    } catch (e) { alert('Error updating status'); }
+  };
+
   const fetchSession = async () => {
     try {
       const response = await apiClient.get(`/sessions/${sessionId}`);
@@ -55,23 +72,21 @@ export default function SessionDashboard() {
       <div className="max-w-7xl mx-auto">
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight truncate">{session.name}</h1>
-              <span className="bg-brand-100 text-brand-600 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider whitespace-nowrap">
-                Active
-              </span>
-            </div>
-            <p className="text-sm sm:text-base text-slate-500 font-semibold flex items-center gap-2 flex-wrap">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></span>
-              <span>{session.participantCount} Participants</span>
-              <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight truncate">{session.name}</h1>
+              <button onClick={cycleStatus} title={statusInfo[session.status]?.label || statusInfo.ACTIVE.label}
+                className={`${statusInfo[session.status]?.color || statusInfo.ACTIVE.color} px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider whitespace-nowrap hover:ring-2 hover:ring-offset-1 transition-all cursor-pointer`}>
+                {session.status || 'ACTIVE'}
+              </button>
+              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider whitespace-nowrap ${
                 editCount > 0
                   ? 'bg-orange-100 text-orange-600'
                   : 'bg-green-100 text-green-600'
               }`}>
                 {editCount > 0 ? 'Unsaved' : 'Saved'}
               </span>
-            </p>
+            </div>
+            <p className="text-xs text-slate-400 font-medium text-center sm:text-left">{session.participants.length} Participants</p>
           </div>
           
           <div className="relative group">
@@ -141,8 +156,8 @@ export default function SessionDashboard() {
                 </button>
               </div>
             ) : showSettlements ? (
-              <div className="sticky top-6 sm:top-10">
-                <SettlementView sessionId={sessionId} sessionName={session.name} />
+              <div className="sticky top-6 sm:top-10 max-h-[calc(100vh-8rem)] overflow-y-auto">
+                <SettlementView sessionId={sessionId} sessionName={session.name} itemCount={session.items.length} />
               </div>
             ) : (
               <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sm:p-10 text-center shadow-xl shadow-slate-200/50">

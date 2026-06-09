@@ -7,5 +7,6 @@ public record SessionResponse(
         String name,
         String shortCode,
         LocalDateTime createdAt,
-        int participantCount) {
+        int participantCount,
+        String status) {
 }

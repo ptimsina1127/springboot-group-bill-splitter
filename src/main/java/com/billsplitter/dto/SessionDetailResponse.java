@@ -8,6 +8,7 @@ public record SessionDetailResponse(
         String name,
         String shortCode,
         LocalDateTime createdAt,
+        String status,
         List<ParticipantResponse> participants,
         List<ExpenseItemResponse> items) {
 }

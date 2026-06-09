@@ -66,7 +66,7 @@ public class SessionService {
         }
 
         return new SessionResponse(session.getId(), session.getName(),
-                session.getShortCode(), session.getCreatedAt(), names.size());
+                session.getShortCode(), session.getCreatedAt(), names.size(), "ACTIVE");
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +78,7 @@ public class SessionService {
 
         return new SessionDetailResponse(
                 session.getId(), session.getName(), session.getShortCode(), session.getCreatedAt(),
+                session.getStatus(),
                 participants.stream().map(this::toParticipantResponse).toList(),
                 items.stream().map(this::toExpenseItemResponse).toList());
     }
@@ -92,10 +93,13 @@ public class SessionService {
     public SessionResponse updateSession(String sessionId, UpdateSessionRequest req) {
         Session session = findSession(sessionId);
         session.setName(req.name());
+        if (req.status() != null) {
+            session.setStatus(req.status());
+        }
         sessionRepository.save(session);
         long count = participantRepository.countBySessionId(sessionId);
         return new SessionResponse(session.getId(), session.getName(),
-                session.getShortCode(), session.getCreatedAt(), (int) count);
+                session.getShortCode(), session.getCreatedAt(), (int) count, session.getStatus());
     }
 
     // ── Participants ──────────────────────────────────────────────────────────

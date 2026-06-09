@@ -25,6 +25,9 @@ public class Session {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false, length = 20)
+    private String status = "ACTIVE";
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Participant> participants = new ArrayList<>();
 
@@ -58,6 +61,8 @@ public class Session {
     public void setParticipants(List<Participant> participants) { this.participants = participants; }
     public List<ExpenseItem> getExpenseItems() { return expenseItems; }
     public void setExpenseItems(List<ExpenseItem> expenseItems) { this.expenseItems = expenseItems; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     @Override
     public boolean equals(Object o) {

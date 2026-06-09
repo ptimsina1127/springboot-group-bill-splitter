@@ -1,31 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { PlusCircle, UserPlus, Receipt, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Receipt, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const steps = [
   {
     icon: PlusCircle,
     step: '1',
     title: 'Create a Session',
-    desc: 'No signup required. Just click "Start New Session" and give it a name. You\'ll get a unique session link and a 5-character short code to share.',
-  },
-  {
-    icon: UserPlus,
-    step: '2',
-    title: 'Add People',
-    desc: 'Add everyone who\'s sharing the bill. Just names — no accounts, no emails. Each person gets added instantly to the session.',
+    desc: 'No signup required. Just click "Start New Session", name it, and add everyone. You\'ll get a unique link and a 5-character short code to share with the group.',
   },
   {
     icon: Receipt,
-    step: '3',
+    step: '2',
     title: 'Add Expenses',
-    desc: 'Enter what each person paid. Add description and amount. You can add as many expenses as you need — the running total updates automatically.',
+    desc: 'Each person adds what they paid. Click any description or amount to edit it inline. Use the Split button to choose who shares each expense — everyone, a subgroup, or just yourself.',
+  },
+  {
+    icon: RefreshCw,
+    step: '3',
+    title: 'Track Progress',
+    desc: 'Sessions move through stages: Active (adding expenses) → Review (ready to settle) → Settled (all paid) → Archived (closed). Click the status badge to advance. A Saved/Unsaved indicator shows when there are pending changes.',
   },
   {
     icon: CheckCircle2,
     step: '4',
     title: 'Settle Up',
-    desc: 'See exactly who owes whom and how much. Share the settlement view with everyone via link or short code. No awkward math conversations.',
+    desc: 'The sidebar calculates exactly who owes whom. Each person has a unique pastel avatar color. The settlement card scrolls independently so you can always see the totals. If you edit expenses after settling, just hit Recalculate.',
   },
 ];
 
@@ -37,7 +37,7 @@ export default function HowItWorks() {
           How It Works
         </h1>
         <p className="text-lg sm:text-xl text-slate-600 text-center mb-16 max-w-2xl mx-auto">
-          Split any group expense in four simple steps.
+          Split group expenses without accounts or awkward math.
         </p>
 
         <div className="space-y-12 sm:space-y-16">
