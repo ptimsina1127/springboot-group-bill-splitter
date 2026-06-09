@@ -107,7 +107,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   // --- Share Dropdown ---
   const openShare = (expenseId, e) => {
     if (shareOpen === expenseId) { setShareOpen(null); return; }
-    const card = e.currentTarget.closest('.bg-white');
+    const card = e.currentTarget.closest('.bg-white:not(button)');
     const btnRect = e.currentTarget.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const spaceBelow = cardRect.bottom - btnRect.bottom;
@@ -274,7 +274,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Split with</label>
               <button type="button" onClick={(e) => {
                   if (addShareOpen) { setAddShareOpen(false); return; }
-                  const card = e.currentTarget.closest('.bg-white');
+                  const card = e.currentTarget.closest('.bg-white:not(button)');
                   const btnRect = e.currentTarget.getBoundingClientRect();
                   const cardRect = card.getBoundingClientRect();
                   const spaceBelow = cardRect.bottom - btnRect.bottom;
