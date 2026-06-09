@@ -42,23 +42,6 @@ jobs:
             sleep 5
             sudo docker compose ps
 
-      - name: Inject frontend dist
-        shell: bash
-        run: |
-          set -e
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
-          tar czf - -C frontend/dist . | \
-          ssh -o StrictHostKeyChecking=no -i /tmp/ssh_key \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-            "set -e
-             mkdir -p /tmp/frontend-deploy
-             tar xzf - -C /tmp/frontend-deploy
-             sudo docker cp /tmp/frontend-deploy/. bill-splitter-frontend:/usr/share/nginx/html/ 2>/dev/null || echo 'Container not running yet'
-             sudo docker exec bill-splitter-frontend nginx -s reload 2>/dev/null || echo 'Reload skipped'
-             rm -rf /tmp/frontend-deploy"
-          rm -f /tmp/ssh_key
-
       - name: SSL & nginx config
         uses: appleboy/ssh-action@v1.2.0
         with:
