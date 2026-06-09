@@ -18,12 +18,17 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 1200s
           script: |
             cd /home/ubuntu/springboot-group-bill-splitter
 
             echo "=== Git pull ==="
-            git fetch origin
-            git reset --hard origin/main
+            git remote prune origin 2>&1 || true
+            git fetch origin 2>&1 || true
+            git reset --hard origin/main 2>&1 || true
+
+            echo "=== Stop old containers ==="
+            sudo docker compose down --remove-orphans 2>&1 || true
 
             echo "=== Build & start ==="
             sudo docker compose build --no-cache 2>&1 || true
