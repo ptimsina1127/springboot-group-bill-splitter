@@ -1,6 +1,7 @@
 package com.billsplitter.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record ExpenseItemResponse(
@@ -9,5 +10,6 @@ public record ExpenseItemResponse(
         String paidByParticipantId,
         String description,
         BigDecimal amount,
-        List<String> sharedWithParticipantIds) {
+        List<String> sharedWithParticipantIds,
+        LocalDateTime createdAt) {
 }

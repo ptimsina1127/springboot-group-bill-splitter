@@ -74,7 +74,7 @@ public class SessionService {
         Session session = findSession(sessionId);
         List<Participant> participants = participantRepository
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
-        List<ExpenseItem> items = expenseItemRepository.findBySessionId(sessionId);
+        List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
         return new SessionDetailResponse(
                 session.getId(), session.getName(), session.getShortCode(), session.getCreatedAt(),
@@ -178,7 +178,7 @@ public class SessionService {
         Session session = findSession(sessionId);
         List<Participant> participants = participantRepository
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
-        List<ExpenseItem> items = expenseItemRepository.findBySessionId(sessionId);
+        List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
         Map<String, String> nameMap = participants.stream()
                 .collect(Collectors.toMap(Participant::getId, Participant::getName));
@@ -269,7 +269,7 @@ public class SessionService {
         Session session = findSession(sessionId);
         List<Participant> participants = participantRepository
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
-        List<ExpenseItem> items = expenseItemRepository.findBySessionId(sessionId);
+        List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
         List<String> allIds = participants.stream().map(Participant::getId).toList();
 
         Map<String, BigDecimal> paid = new HashMap<>();
@@ -332,6 +332,7 @@ public class SessionService {
                 item.getId(), item.getSession().getId(),
                 item.getPaidByParticipantId(), item.getDescription(),
                 item.getAmount().setScale(2, RoundingMode.HALF_UP),
-                item.getSharedWithParticipantIds());
+                item.getSharedWithParticipantIds(),
+                item.getCreatedAt());
     }
 }

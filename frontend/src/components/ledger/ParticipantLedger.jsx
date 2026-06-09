@@ -17,12 +17,14 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
 
-  // Share modal
-  const [shareModal, setShareModal] = useState(null);
+  // Share dropdown
+  const [shareOpen, setShareOpen] = useState(null);
+  const [shareAbove, setShareAbove] = useState(false);
   const shareRef = useRef(null);
 
   // Add form share dropdown
-  const [addSharePos, setAddSharePos] = useState(null);
+  const [addShareOpen, setAddShareOpen] = useState(false);
+  const [addShareAbove, setAddShareAbove] = useState(false);
   const addShareRef = useRef(null);
 
   const participantExpenses = items.filter(i => i.paidByParticipantId === participant.id);
@@ -30,16 +32,16 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     new Date(a.createdAt) - new Date(b.createdAt)
   );
 
-  // Close share modal on outside click
+  // Close share dropdown on outside click
   useEffect(() => {
-    if (!shareModal && !addSharePos) return;
+    if (!shareOpen && !addShareOpen) return;
     const handler = (e) => {
-      if (shareRef.current && !shareRef.current.contains(e.target)) setShareModal(null);
-      if (addShareRef.current && !addShareRef.current.contains(e.target)) setAddSharePos(null);
+      if (shareRef.current && !shareRef.current.contains(e.target)) setShareOpen(null);
+      if (addShareRef.current && !addShareRef.current.contains(e.target)) setAddShareOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [shareModal, addSharePos]);
+  }, [shareOpen, addShareOpen]);
 
   // --- Add Form ---
   const resetAddForm = () => setAddFormData({
@@ -102,19 +104,22 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     if (e.key === 'Escape') { setEditingField(null); onEditingChange(false); }
   };
 
-  // --- Share Modal ---
+  // --- Share Dropdown ---
   const openShare = (expenseId, e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setShareModal({
-      expenseId,
-      top: rect.bottom + 6,
-      left: Math.min(rect.left, window.innerWidth - 220)
-    });
+    if (shareOpen === expenseId) { setShareOpen(null); return; }
+    const card = e.currentTarget.closest('.bg-white');
+    const btnRect = e.currentTarget.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const spaceBelow = cardRect.bottom - btnRect.bottom;
+    const cols = allParticipants.length < 20 ? 4 : 5;
+    const estHeight = Math.ceil(allParticipants.length / cols) * 44 + 40;
+    setShareAbove(spaceBelow < estHeight);
+    setShareOpen(expenseId);
   };
 
   const toggleShareExpense = async (pid) => {
-    if (!shareModal) return;
-    const expense = participantExpenses.find(e => e.id === shareModal.expenseId);
+    if (!shareOpen) return;
+    const expense = participantExpenses.find(e => e.id === shareOpen);
     if (!expense) return;
     const current = expense.sharedWithParticipantIds;
     const updated = current.includes(pid)
@@ -122,7 +127,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       : [...current, pid];
 
     try {
-      await apiClient.put(`/sessions/${sessionId}/items/${shareModal.expenseId}`, {
+      await apiClient.put(`/sessions/${sessionId}/items/${shareOpen}`, {
         description: expense.description,
         amount: expense.amount,
         paidByParticipantId: expense.paidByParticipantId,
@@ -162,7 +167,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const isEditingThis = (id, field) => editingField?.id === id && editingField?.field === field;
 
   return (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden transition-all hover:shadow-lg hover:border-slate-200">
+    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 transition-all hover:shadow-lg hover:border-slate-200">
       <div className="bg-slate-50/50 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand-500 text-white rounded-full flex items-center justify-center text-base font-bold shadow-sm flex-shrink-0">
           {participant.name[0].toUpperCase()}
@@ -216,12 +221,31 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                   </div>
 
                   <div className="flex items-center justify-between mt-2">
-                    {/* Shared With Logo */}
-                    <button onClick={(e) => openShare(exp.id, e)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-all text-xs font-bold">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>{exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
-                    </button>
+                    <div className="relative">
+                      <button onClick={(e) => openShare(exp.id, e)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-all text-xs font-bold">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
+                      </button>
+                      {shareOpen === exp.id && (
+                        <div ref={shareRef}
+                          className={`absolute z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-72 ${shareAbove ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
+                          <div className={`grid gap-1 ${allParticipants.length < 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+                            {allParticipants.map(p => {
+                              const checked = exp.sharedWithParticipantIds.includes(p.id);
+                              return (
+                                <label key={p.id} className="flex items-center gap-1.5 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
+                                  <input type="checkbox" checked={checked} onChange={() => toggleShareExpense(p.id)}
+                                    className="w-4 h-4 rounded text-brand-500 focus:ring-brand-500" />
+                                  <span className="text-sm font-semibold text-slate-700 truncate">{p.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Delete */}
                     <button onClick={() => removeExpense(exp.id)}
@@ -248,12 +272,18 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                 placeholder="0.00"
                 className="w-20 sm:w-24 shrink-0 px-3 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-brand-100 focus:border-brand-400 outline-none transition-all text-sm sm:text-base font-medium text-right" />
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Split with</label>
-              <button type="button" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => {
-                  if (addSharePos) { setAddSharePos(null); return; }
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setAddSharePos({ top: rect.bottom + 6, left: Math.min(rect.left, window.innerWidth - 280) });
+              <button type="button" onClick={(e) => {
+                  if (addShareOpen) { setAddShareOpen(false); return; }
+                  const card = e.currentTarget.closest('.bg-white');
+                  const btnRect = e.currentTarget.getBoundingClientRect();
+                  const cardRect = card.getBoundingClientRect();
+                  const spaceBelow = cardRect.bottom - btnRect.bottom;
+                  const cols = allParticipants.length < 20 ? 4 : 5;
+                  const estHeight = Math.ceil(allParticipants.length / cols) * 44 + 40;
+                  setAddShareAbove(spaceBelow < estHeight);
+                  setAddShareOpen(true);
                 }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-500 transition-all text-sm font-semibold">
                 <Users className="w-3.5 h-3.5" />
@@ -261,12 +291,11 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                   ? 'ALL'
                   : `${addFormData.sharedWithParticipantIds.length}/${allParticipants.length}`}
               </button>
-              {addSharePos && (
+              {addShareOpen && (
                 <div ref={addShareRef}
-                  className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-72"
-                  style={{ top: addSharePos.top, left: addSharePos.left }}>
+                  className={`absolute z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-72 ${addShareAbove ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className={`grid gap-1 ${allParticipants.length < 20 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                     {allParticipants.map(p => (
                       <label key={p.id} className="flex items-center gap-1.5 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
                         <input type="checkbox" checked={addFormData.sharedWithParticipantIds.includes(p.id)}
@@ -306,28 +335,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
           </div>
         )}
       </div>
-
-      {/* Share Modal */}
-      {shareModal && (
-        <div ref={shareRef}
-          className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-52"
-          style={{ top: shareModal.top, left: shareModal.left }}>
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
-          <div className="space-y-0.5">
-            {allParticipants.map(p => {
-              const expense = participantExpenses.find(e => e.id === shareModal.expenseId);
-              const checked = expense?.sharedWithParticipantIds.includes(p.id) ?? false;
-              return (
-                <label key={p.id} className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
-                  <input type="checkbox" checked={checked} onChange={() => toggleShareExpense(p.id)}
-                    className="w-4 h-4 rounded text-brand-500 focus:ring-brand-500" />
-                  <span className="text-sm font-semibold text-slate-700">{p.name}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
