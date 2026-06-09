@@ -21,17 +21,25 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const [shareModal, setShareModal] = useState(null);
   const shareRef = useRef(null);
 
+  // Add form share dropdown
+  const [addShareOpen, setAddShareOpen] = useState(false);
+  const addShareRef = useRef(null);
+
   const participantExpenses = items.filter(i => i.paidByParticipantId === participant.id);
+  const sortedExpenses = [...participantExpenses].sort((a, b) =>
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
 
   // Close share modal on outside click
   useEffect(() => {
-    if (!shareModal) return;
+    if (!shareModal && !addShareOpen) return;
     const handler = (e) => {
       if (shareRef.current && !shareRef.current.contains(e.target)) setShareModal(null);
+      if (addShareRef.current && !addShareRef.current.contains(e.target)) setAddShareOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [shareModal]);
+  }, [shareModal, addShareOpen]);
 
   // --- Add Form ---
   const resetAddForm = () => setAddFormData({
@@ -44,7 +52,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     try {
       await apiClient.post(`/sessions/${sessionId}/items`, addFormData);
       resetAddForm();
-      setShowAddForm(false);
       onEditingChange(false);
       onUpdate();
     } catch (error) { alert('Error adding expense'); }
@@ -175,9 +182,9 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
 
         {/* Expense Items — render first */}
-        {participantExpenses.length > 0 && (
+        {sortedExpenses.length > 0 && (
           <div className="space-y-2 sm:space-y-3">
-            {participantExpenses.map(exp => (
+            {sortedExpenses.map(exp => (
               <div key={exp.id} className="bg-slate-50/50 rounded-2xl border border-slate-100 transition-all hover:border-slate-200">
                 <div className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 min-w-0">
@@ -213,7 +220,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                     <button onClick={(e) => openShare(exp.id, e)}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-all text-xs font-bold">
                       <Users className="w-3.5 h-3.5" />
-                      <span>{exp.sharedWithParticipantIds.length}/{allParticipants.length}</span>
+                      <span>{exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
                     </button>
 
                     {/* Delete */}
@@ -241,21 +248,31 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                 placeholder="0.00"
                 className="w-20 sm:w-24 shrink-0 px-3 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-brand-100 focus:border-brand-400 outline-none transition-all text-sm sm:text-base font-medium text-right" />
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Split with</label>
-              <div className="flex flex-wrap gap-1.5">
-                {allParticipants.map(p => (
-                  <button key={p.id} type="button" onClick={() => toggleAddShared(p.id)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-sm font-semibold ${
-                      addFormData.sharedWithParticipantIds.includes(p.id)
-                        ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                    }`}>
-                    <span className="text-xs">{p.name[0].toUpperCase()}</span>
-                    <span className="hidden sm:inline">{p.name}</span>
-                  </button>
-                ))}
-              </div>
+              <button type="button" onClick={() => setAddShareOpen(!addShareOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-500 transition-all text-sm font-semibold">
+                <Users className="w-3.5 h-3.5" />
+                {addFormData.sharedWithParticipantIds.length === allParticipants.length
+                  ? 'ALL'
+                  : `${addFormData.sharedWithParticipantIds.length}/${allParticipants.length}`}
+              </button>
+              {addShareOpen && (
+                <div ref={addShareRef}
+                  className="absolute z-50 top-full left-0 mt-1 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 w-52">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
+                  <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                    {allParticipants.map(p => (
+                      <label key={p.id} className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
+                        <input type="checkbox" checked={addFormData.sharedWithParticipantIds.includes(p.id)}
+                          onChange={() => toggleAddShared(p.id)}
+                          className="w-4 h-4 rounded text-brand-500 focus:ring-brand-500" />
+                        <span className="text-sm font-semibold text-slate-700">{p.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2 pt-1">
               <button type="submit" className="flex-1 bg-brand-500 text-white py-3 rounded-xl font-bold text-sm transition-all hover:bg-brand-600 active:scale-95 shadow-sm flex items-center justify-center gap-1">
@@ -270,7 +287,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
         )}
 
         {/* Empty state */}
-        {participantExpenses.length === 0 && !showAddForm && (
+        {sortedExpenses.length === 0 && !showAddForm && (
           <div className="text-center py-6 sm:py-8 text-slate-400 text-base font-medium">No expenses yet</div>
         )}
 
