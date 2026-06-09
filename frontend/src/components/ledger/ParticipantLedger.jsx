@@ -111,8 +111,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     const btnRect = e.currentTarget.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     const spaceBelow = cardRect.bottom - btnRect.bottom;
-    const estHeight = Math.ceil(allParticipants.length / 3) * 44 + 40;
-    setShareAbove(spaceBelow < estHeight);
+    setShareAbove(spaceBelow < 80);
     setShareOpen(expenseId);
   };
 
@@ -279,8 +278,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                   const btnRect = e.currentTarget.getBoundingClientRect();
                   const cardRect = card.getBoundingClientRect();
                   const spaceBelow = cardRect.bottom - btnRect.bottom;
-                  const estHeight = Math.ceil(allParticipants.length / 3) * 44 + 40;
-                  setAddShareAbove(spaceBelow < estHeight);
+                  setAddShareAbove(spaceBelow < 80);
                   setAddShareOpen(true);
                 }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-500 transition-all text-sm font-semibold">
