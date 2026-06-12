@@ -37,7 +37,7 @@ jobs:
             sleep 5
             sudo docker compose ps
 
-      - name: SSL renewal
+      - name: SSL renewal & cleanup
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
