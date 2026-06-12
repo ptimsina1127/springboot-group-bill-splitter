@@ -13,7 +13,7 @@ services:
       --innodb-buffer-pool-size=32M
       --innodb-log-buffer-size=1M
       --performance-schema=OFF
-      --max-connections=10
+      --max-connections=20
       --table-open-cache=100
       --thread-cache-size=4
       --tmp-table-size=16M
