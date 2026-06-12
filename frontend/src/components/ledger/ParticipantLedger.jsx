@@ -32,6 +32,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const sortedExpenses = [...participantExpenses].sort((a, b) =>
     new Date(a.createdAt) - new Date(b.createdAt)
   );
+  const totalSpent = participantExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
 
   // Close share dropdown on outside click
   useEffect(() => {
@@ -180,11 +181,15 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
             className="font-bold text-slate-800 text-base sm:text-lg bg-transparent border-b-2 border-brand-500 outline-none flex-1 py-0.5" />
         ) : (
           <h4 onClick={() => { setEditedName(participant.name); setEditingName(true); onEditingChange(true); }}
-            className={`cursor-pointer hover:text-brand-600 transition-colors ${participant.name.length > 10 ? 'font-semibold text-sm sm:text-base' : 'font-bold text-base sm:text-lg'}`}>
-            {participant.name}
-          </h4>
-        )}
-      </div>
+              className={`cursor-pointer hover:text-brand-600 transition-colors ${participant.name.length > 10 ? 'font-semibold text-sm sm:text-base' : 'font-bold text-base sm:text-lg'}`}>
+              {participant.name}
+            </h4>
+          )}
+          <div className="ml-auto flex items-center gap-1 bg-white rounded-xl px-2.5 py-1 border border-slate-200">
+            <span className="text-xs text-brand-500 font-black">$</span>
+            <span className="text-sm font-bold text-slate-700">{totalSpent.toFixed(2)}</span>
+          </div>
+        </div>
 
       <div className="p-3 sm:p-4 space-y-2">
 

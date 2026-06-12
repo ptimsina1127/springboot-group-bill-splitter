@@ -131,6 +131,7 @@ public class SessionService {
         Participant p = participantRepository.findById(participantId)
                 .filter(pt -> pt.getSession().getId().equals(sessionId))
                 .orElseThrow(() -> new EntityNotFoundException("Participant not found"));
+        expenseItemRepository.deleteByPaidByParticipantId(participantId);
         participantRepository.delete(p);
     }
 
@@ -184,10 +185,14 @@ public class SessionService {
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
         List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
+        Set<String> allIds = participants.stream()
+                .map(Participant::getId).collect(Collectors.toSet());
         Map<String, String> nameMap = participants.stream()
                 .collect(Collectors.toMap(Participant::getId, Participant::getName));
-        List<String> allIds = participants.stream()
-                .map(Participant::getId).toList();
+
+        items = items.stream()
+                .filter(i -> allIds.contains(i.getPaidByParticipantId()))
+                .toList();
 
         Map<String, BigDecimal> balances = new HashMap<>();
         allIds.forEach(id -> balances.put(id, BigDecimal.ZERO));
@@ -274,7 +279,11 @@ public class SessionService {
         List<Participant> participants = participantRepository
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
         List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        List<String> allIds = participants.stream().map(Participant::getId).toList();
+        Set<String> allIds = participants.stream().map(Participant::getId).collect(Collectors.toSet());
+
+        items = items.stream()
+                .filter(i -> allIds.contains(i.getPaidByParticipantId()))
+                .toList();
 
         Map<String, BigDecimal> paid = new HashMap<>();
         Map<String, BigDecimal> owed = new HashMap<>();

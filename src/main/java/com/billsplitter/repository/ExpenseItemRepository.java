@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ExpenseItemRepository extends JpaRepository<ExpenseItem, String> {
     List<ExpenseItem> findBySessionIdOrderByCreatedAtAsc(String sessionId);
+    void deleteByPaidByParticipantId(String paidByParticipantId);
 }
