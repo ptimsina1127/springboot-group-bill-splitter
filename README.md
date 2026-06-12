@@ -185,3 +185,4 @@ Or use any GUI tool (MySQL Workbench, DBeaver, TablePlus) pointing to `localhost
 - **Backend startup:** ~60s (Hibernate schema validation + DB health checks)
 - **DNS:** A records for `@` and `www` point to `REDACTED` (Namecheap)
 - **Let's Encrypt:** `certbot.timer` runs twice daily; deploy hook reloads Nginx
+
