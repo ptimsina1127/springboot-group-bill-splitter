@@ -120,7 +120,9 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     if (!shareOpen) return;
     const expense = participantExpenses.find(e => e.id === shareOpen);
     if (!expense) return;
-    const current = expense.sharedWithParticipantIds;
+    const current = expense.sharedWithParticipantIds.length > 0
+      ? expense.sharedWithParticipantIds
+      : allParticipants.map(p => p.id);
     const updated = current.includes(pid)
       ? current.filter(id => id !== pid)
       : [...current, pid];
@@ -225,7 +227,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                       <button onClick={(e) => openShare(exp.id, e)}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-all text-[10px] font-bold">
                         <Users className="w-3 h-3" />
-                        <span>{exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
+                        <span>{exp.sharedWithParticipantIds.length === 0 || exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
                       </button>
                       {shareOpen === exp.id && (
                         <div ref={shareRef}
@@ -233,7 +235,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Split with</div>
                           <div className="grid gap-1 grid-cols-3">
                             {allParticipants.map(p => {
-                              const checked = exp.sharedWithParticipantIds.includes(p.id);
+                              const checked = exp.sharedWithParticipantIds.length === 0 || exp.sharedWithParticipantIds.includes(p.id);
                               return (
                                 <label key={p.id} className="flex items-center gap-1.5 px-2 py-2 rounded-xl cursor-pointer hover:bg-slate-50 transition-all">
                                   <input type="checkbox" checked={checked} onChange={() => toggleShareExpense(p.id)}
