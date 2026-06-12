@@ -12,40 +12,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          command_timeout: 1200s
-          script: |
-            cd /home/ubuntu/springboot-group-bill-splitter
+      - name: Install SSH key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
+      - name: Deploy via SSH
+        env:
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
+            -i ~/.ssh/deploy_key \
+            "$SSH_USER@$SSH_HOST" bash -c '
+            set -e
+            cd /home/ubuntu/springboot-group-bill-splitter
             echo "=== Git pull ==="
             git remote prune origin 2>&1 || true
             git fetch origin 2>&1 || true
             git reset --hard origin/main 2>&1 || true
-
             echo "=== Stop old containers ==="
             sudo docker compose down --remove-orphans 2>&1 || true
-
             echo "=== Build & start ==="
             sudo docker compose build --no-cache 2>&1 || true
             sudo docker compose up -d 2>&1 || true
-
             sleep 5
             sudo docker compose ps
+          '
 
       - name: SSL renewal
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
+        env:
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
+            -i ~/.ssh/deploy_key \
+            "$SSH_USER@$SSH_HOST" bash -c '
+            set -e
             echo "=== SSL renewal ==="
             if command -v certbot &> /dev/null; then
               sudo certbot renew --nginx --non-interactive || true
             fi
             sudo docker image prune -f || true
+          '
