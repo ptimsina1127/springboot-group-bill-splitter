@@ -127,20 +127,6 @@ public class SessionService {
         return toParticipantResponse(p);
     }
 
-    public void removeParticipant(String sessionId, String participantId) {
-        Participant p = participantRepository.findById(participantId)
-                .filter(pt -> pt.getSession().getId().equals(sessionId))
-                .orElseThrow(() -> new EntityNotFoundException("Participant not found"));
-        expenseItemRepository.deleteByPaidByParticipantId(participantId);
-        List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        for (ExpenseItem item : items) {
-            if (item.getSharedWithParticipantIds().remove(participantId)) {
-                expenseItemRepository.save(item);
-            }
-        }
-        participantRepository.delete(p);
-    }
-
     // ── Expense Items ─────────────────────────────────────────────────────────
 
     public ExpenseItemResponse addExpenseItem(String sessionId, AddExpenseItemRequest req) {
@@ -191,14 +177,10 @@ public class SessionService {
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
         List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
-        Set<String> allIds = participants.stream()
-                .map(Participant::getId).collect(Collectors.toSet());
+        List<String> allIds = participants.stream()
+                .map(Participant::getId).toList();
         Map<String, String> nameMap = participants.stream()
                 .collect(Collectors.toMap(Participant::getId, Participant::getName));
-
-        items = items.stream()
-                .filter(i -> allIds.contains(i.getPaidByParticipantId()))
-                .toList();
 
         Map<String, BigDecimal> balances = new HashMap<>();
         allIds.forEach(id -> balances.put(id, BigDecimal.ZERO));
@@ -285,11 +267,7 @@ public class SessionService {
         List<Participant> participants = participantRepository
                 .findBySessionIdOrderByDisplayOrderAsc(sessionId);
         List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
-        Set<String> allIds = participants.stream().map(Participant::getId).collect(Collectors.toSet());
-
-        items = items.stream()
-                .filter(i -> allIds.contains(i.getPaidByParticipantId()))
-                .toList();
+        List<String> allIds = participants.stream().map(Participant::getId).toList();
 
         Map<String, BigDecimal> paid = new HashMap<>();
         Map<String, BigDecimal> owed = new HashMap<>();

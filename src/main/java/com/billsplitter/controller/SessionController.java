@@ -81,17 +81,6 @@ public class SessionController {
         }
     }
 
-    @DeleteMapping("/sessions/{sessionId}/participants/{participantId}")
-    public ResponseEntity<Void> removeParticipant(
-            @PathVariable String sessionId,
-            @PathVariable String participantId) {
-        try {
-            sessionService.removeParticipant(sessionId, participantId);
-            return ResponseEntity.noContent().build();
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
 
     // ── Expense Items ─────────────────────────────────────────────────────────
 
