@@ -8,6 +8,16 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     env_file: .env
+    mem_limit: 192m
+    command: >
+      --innodb-buffer-pool-size=32M
+      --innodb-log-buffer-size=1M
+      --performance-schema=OFF
+      --max-connections=10
+      --table-open-cache=100
+      --thread-cache-size=4
+      --tmp-table-size=16M
+      --max-heap-table-size=16M
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -24,6 +34,7 @@ services:
       db:
         condition: service_healthy
     env_file: .env
+    mem_limit: 192m
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -39,6 +50,7 @@ services:
         VITE_API_URL: /spring-api
     container_name: bill-splitter-frontend
     restart: unless-stopped
+    mem_limit: 32m
     ports:
       - "3000:80"
       - "3443:443"
