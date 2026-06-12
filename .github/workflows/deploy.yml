@@ -12,19 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SSH key
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
       - name: Deploy via SSH
         env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SSH_HOST: ${{ secrets.DEPLOY_HOST }}
           SSH_USER: ${{ secrets.DEPLOY_USER }}
         run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
           ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
             -i ~/.ssh/deploy_key \
             "$SSH_USER@$SSH_HOST" bash -c '
@@ -45,9 +42,12 @@ jobs:
 
       - name: SSL renewal
         env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SSH_HOST: ${{ secrets.DEPLOY_HOST }}
           SSH_USER: ${{ secrets.DEPLOY_USER }}
         run: |
+          echo "$SSH_KEY" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
             -i ~/.ssh/deploy_key \
             "$SSH_USER@$SSH_HOST" bash -c '
