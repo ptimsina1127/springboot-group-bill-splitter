@@ -132,6 +132,12 @@ public class SessionService {
                 .filter(pt -> pt.getSession().getId().equals(sessionId))
                 .orElseThrow(() -> new EntityNotFoundException("Participant not found"));
         expenseItemRepository.deleteByPaidByParticipantId(participantId);
+        List<ExpenseItem> items = expenseItemRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        for (ExpenseItem item : items) {
+            if (item.getSharedWithParticipantIds().remove(participantId)) {
+                expenseItemRepository.save(item);
+            }
+        }
         participantRepository.delete(p);
     }
 

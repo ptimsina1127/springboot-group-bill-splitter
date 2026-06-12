@@ -122,7 +122,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     const expense = participantExpenses.find(e => e.id === shareOpen);
     if (!expense) return;
     const current = expense.sharedWithParticipantIds.length > 0
-      ? expense.sharedWithParticipantIds
+      ? expense.sharedWithParticipantIds.filter(id => allParticipants.some(p => p.id === id))
       : allParticipants.map(p => p.id);
     const updated = current.includes(pid)
       ? current.filter(id => id !== pid)
@@ -232,7 +232,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                       <button onClick={(e) => openShare(exp.id, e)}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-brand-500 hover:border-brand-300 transition-all text-[10px] font-bold">
                         <Users className="w-3 h-3" />
-                        <span>{exp.sharedWithParticipantIds.length === 0 || exp.sharedWithParticipantIds.length === allParticipants.length ? 'ALL' : `${exp.sharedWithParticipantIds.length}/${allParticipants.length}`}</span>
+                        <span>{(() => { const as = exp.sharedWithParticipantIds.filter(id => allParticipants.some(p => p.id === id)); return as.length === 0 || as.length === allParticipants.length ? 'ALL' : `${as.length}/${allParticipants.length}`; })()}</span>
                       </button>
                       {shareOpen === exp.id && (
                         <div ref={shareRef}
