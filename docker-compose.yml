@@ -47,7 +47,7 @@ services:
       context: frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: /spring-api
+        VITE_API_URL: https://www.groupbillsplit.me/spring-api
     container_name: bill-splitter-frontend
     restart: unless-stopped
     mem_limit: 32m
