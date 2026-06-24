@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ptimsina.billsplitter",
+    "sha256_cert_fingerprints": [
+      "BB:C3:8F:25:4B:FE:3B:B4:B6:5D:51:11:E8:FD:B8:E1:34:97:8E:98:CB:C4:DA:4A:18:ED:66:86:91:ED:C1:1D"
+    ]
+  }
+}]
