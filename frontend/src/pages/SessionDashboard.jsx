@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calculator, LogOut, QrCode, Share2, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,6 +17,15 @@ export default function SessionDashboard() {
   const [settlementDismissed, setSettlementDismissed] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [calcTrigger, setCalcTrigger] = useState(0);
+  const calcTimerRef = useRef(null);
+
+  const triggerRecalculate = () => {
+    if (calcTimerRef.current) clearTimeout(calcTimerRef.current);
+    calcTimerRef.current = setTimeout(() => {
+      setCalcTrigger(v => v + 1);
+    }, 800);
+  };
 
   const handleEditingChange = (editing) => {
     setEditCount(prev => editing ? prev + 1 : Math.max(0, prev - 1));
@@ -26,6 +35,35 @@ export default function SessionDashboard() {
   const handleRecalculate = () => {
     setSettlementDismissed(false);
     setShowSettlements(true);
+    setCalcTrigger(v => v + 1);
+  };
+
+  const handleItemAdded = (newItem) => {
+    setSession(prev => ({ ...prev, items: [...prev.items, newItem] }));
+    triggerRecalculate();
+  };
+
+  const handleItemUpdated = (updatedItem) => {
+    setSession(prev => ({
+      ...prev,
+      items: prev.items.map(i => i.id === updatedItem.id ? updatedItem : i)
+    }));
+    triggerRecalculate();
+  };
+
+  const handleItemDeleted = (itemId) => {
+    setSession(prev => ({
+      ...prev,
+      items: prev.items.filter(i => i.id !== itemId)
+    }));
+    triggerRecalculate();
+  };
+
+  const handleParticipantRenamed = (updatedParticipant) => {
+    setSession(prev => ({
+      ...prev,
+      participants: prev.participants.map(p => p.id === updatedParticipant.id ? updatedParticipant : p)
+    }));
   };
 
   const statusInfo = {
@@ -40,8 +78,8 @@ export default function SessionDashboard() {
     const stat = session?.status || 'ACTIVE';
     const next = stat === 'ARCHIVED' ? 'ACTIVE' : order[order.indexOf(stat) + 1];
     try {
-      await apiClient.put(`/sessions/${sessionId}`, { name: session.name, status: next });
-      setSession(prev => ({ ...prev, status: next }));
+      const res = await apiClient.put(`/sessions/${sessionId}`, { name: session.name, status: next });
+      setSession(prev => ({ ...prev, status: res.data.status }));
     } catch (e) { alert('Error updating status'); }
   };
 
@@ -50,6 +88,9 @@ export default function SessionDashboard() {
       const response = await apiClient.get(`/sessions/${sessionId}`);
       setSession(response.data);
       setShowSettlements(response.data.items.length > 0);
+      if (response.data.items.length > 0) {
+        setCalcTrigger(1);
+      }
     } catch (error) {
       alert('Session not found!');
       navigate('/');
@@ -109,7 +150,10 @@ export default function SessionDashboard() {
                   participant={p}
                   items={session.items}
                   allParticipants={session.participants}
-                  onUpdate={() => fetchSession()}
+                  onItemAdded={handleItemAdded}
+                  onItemUpdated={handleItemUpdated}
+                  onItemDeleted={handleItemDeleted}
+                  onParticipantRenamed={handleParticipantRenamed}
                   onEditingChange={handleEditingChange}
                 />
               ))}
@@ -157,7 +201,7 @@ export default function SessionDashboard() {
               </div>
             ) : showSettlements ? (
               <div className="sticky top-6 sm:top-10 max-h-[calc(100vh-8rem)] overflow-y-auto">
-                <SettlementView sessionId={sessionId} sessionName={session.name} itemCount={session.items.length} />
+                <SettlementView sessionId={sessionId} sessionName={session.name} itemCount={session.items.length} calcTrigger={calcTrigger} />
               </div>
             ) : (
               <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sm:p-10 text-center shadow-xl shadow-slate-200/50">

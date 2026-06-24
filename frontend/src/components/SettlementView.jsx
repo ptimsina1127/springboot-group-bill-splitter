@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CheckCircle, RotateCcw, Receipt, ArrowRight, DollarSign } from 'lucide-react';
 import apiClient from '../api/client';
 import { getColor } from '../utils/avatarColor';
@@ -23,9 +23,10 @@ function SkeletonRow() {
   );
 }
 
-export default function SettlementView({ sessionId, sessionName, itemCount }) {
+export default function SettlementView({ sessionId, sessionName, itemCount, calcTrigger }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isFirstRun = useRef(true);
 
   const calculate = useCallback(async () => {
     setLoading(true);
@@ -39,7 +40,15 @@ export default function SettlementView({ sessionId, sessionName, itemCount }) {
     }
   }, [sessionId]);
 
-  useEffect(() => { calculate(); }, [calculate]);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      calculate();
+    } else if (calcTrigger > 0) {
+      const timer = setTimeout(calculate, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [calcTrigger, calculate]);
 
   if (loading) return (
     <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm">

@@ -3,7 +3,7 @@ import { Plus, Trash2, Users, Check, X } from 'lucide-react';
 import apiClient from '../../api/client';
 import { getColor } from '../../utils/avatarColor';
 
-export default function ParticipantLedger({ participant, items, sessionId, allParticipants, onUpdate, onEditingChange }) {
+export default function ParticipantLedger({ participant, items, sessionId, allParticipants, onItemAdded, onItemUpdated, onItemDeleted, onParticipantRenamed, onEditingChange }) {
   const [editingName, setEditingName] = useState(false);
   const [editedName, setEditedName] = useState(participant.name);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -14,16 +14,14 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     sharedWithParticipantIds: allParticipants.map(p => p.id)
   });
 
-  // Inline text editing
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
 
-  // Share dropdown
   const [shareOpen, setShareOpen] = useState(null);
   const [shareAbove, setShareAbove] = useState(false);
   const shareRef = useRef(null);
+  const shareTimerRef = useRef(null);
 
-  // Add form share dropdown
   const [addShareOpen, setAddShareOpen] = useState(false);
   const [addShareAbove, setAddShareAbove] = useState(false);
   const addShareRef = useRef(null);
@@ -34,7 +32,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   );
   const totalSpent = participantExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
 
-  // Close share dropdown on outside click
   useEffect(() => {
     if (!shareOpen && !addShareOpen) return;
     const handler = (e) => {
@@ -45,7 +42,12 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     return () => document.removeEventListener('mousedown', handler);
   }, [shareOpen, addShareOpen]);
 
-  // --- Add Form ---
+  useEffect(() => {
+    return () => {
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    };
+  }, []);
+
   const resetAddForm = () => setAddFormData({
     description: '', amount: '', paidByParticipantId: participant.id,
     sharedWithParticipantIds: allParticipants.map(p => p.id)
@@ -54,10 +56,10 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      await apiClient.post(`/sessions/${sessionId}/items`, addFormData);
+      const res = await apiClient.post(`/sessions/${sessionId}/items`, addFormData);
+      onItemAdded(res.data);
       resetAddForm();
       onEditingChange(false);
-      onUpdate();
     } catch (error) { alert('Error adding expense'); }
   };
 
@@ -70,7 +72,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     }));
   };
 
-  // --- Inline Editing ---
   const startEdit = (expenseId, field, value) => {
     setEditingField({ id: expenseId, field });
     setEditValue(String(value));
@@ -94,8 +95,8 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     };
 
     try {
-      await apiClient.put(`/sessions/${sessionId}/items/${id}`, updateData);
-      onUpdate();
+      const res = await apiClient.put(`/sessions/${sessionId}/items/${id}`, updateData);
+      onItemUpdated(res.data);
     } catch (error) { alert('Error updating expense'); }
     setEditingField(null);
     onEditingChange(false);
@@ -106,9 +107,9 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     if (e.key === 'Escape') { setEditingField(null); onEditingChange(false); }
   };
 
-  // --- Share Dropdown ---
   const openShare = (expenseId, e) => {
-    if (shareOpen === expenseId) { setShareOpen(null); return; }
+    if (shareOpen === expenseId) { setShareOpen(null); if (shareTimerRef.current) clearTimeout(shareTimerRef.current); return; }
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
     const card = e.currentTarget.closest('.bg-white:not(button)');
     const btnRect = e.currentTarget.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
@@ -117,7 +118,7 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
     setShareOpen(expenseId);
   };
 
-  const toggleShareExpense = async (pid) => {
+  const toggleShareExpense = (pid) => {
     if (!shareOpen) return;
     const expense = participantExpenses.find(e => e.id === shareOpen);
     if (!expense) return;
@@ -128,33 +129,35 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
       ? current.filter(id => id !== pid)
       : [...current, pid];
 
-    try {
-      await apiClient.put(`/sessions/${sessionId}/items/${shareOpen}`, {
-        description: expense.description,
-        amount: expense.amount,
-        paidByParticipantId: expense.paidByParticipantId,
-        sharedWithParticipantIds: updated
-      });
-      onUpdate();
-    } catch (error) { alert('Error updating sharing'); }
+    onItemUpdated({ ...expense, sharedWithParticipantIds: updated });
+
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    shareTimerRef.current = setTimeout(async () => {
+      try {
+        await apiClient.put(`/sessions/${sessionId}/items/${shareOpen}`, {
+          description: expense.description,
+          amount: expense.amount,
+          paidByParticipantId: expense.paidByParticipantId,
+          sharedWithParticipantIds: updated
+        });
+      } catch (error) { alert('Error updating sharing'); }
+    }, 500);
   };
 
-  // --- Delete ---
   const removeExpense = async (id) => {
     try {
       await apiClient.delete(`/sessions/${sessionId}/items/${id}`);
+      onItemDeleted(id);
       if (editingField?.id === id) { setEditingField(null); onEditingChange(false); }
-      onUpdate();
     } catch (error) { alert('Error removing expense'); }
   };
 
-  // --- Name Editing ---
   const saveName = async () => {
     const trimmed = editedName.trim();
     if (trimmed && trimmed !== participant.name) {
       try {
-        await apiClient.put(`/sessions/${sessionId}/participants/${participant.id}`, { name: trimmed });
-        onUpdate();
+        const res = await apiClient.put(`/sessions/${sessionId}/participants/${participant.id}`, { name: trimmed });
+        onParticipantRenamed(res.data);
       } catch (error) { alert('Error updating name'); }
     }
     setEditingName(false);
@@ -193,14 +196,12 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
 
       <div className="p-3 sm:p-4 space-y-2">
 
-        {/* Expense Items — render first */}
         {sortedExpenses.length > 0 && (
           <div className="space-y-1.5 sm:space-y-2">
             {sortedExpenses.map(exp => (
               <div key={exp.id} className="bg-slate-50/50 rounded-xl border border-slate-100 transition-all hover:border-slate-200">
                 <div className="p-2.5 sm:p-3">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    {/* Clickable Description */}
                     {isEditingThis(exp.id, 'description') ? (
                       <input autoFocus value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
@@ -213,7 +214,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                       </span>
                     )}
 
-                    {/* Clickable Amount */}
                     {isEditingThis(exp.id, 'amount') ? (
                       <input autoFocus type="number" step="0.01" value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
@@ -254,7 +254,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
                       )}
                     </div>
 
-                    {/* Delete */}
                     <button onClick={() => removeExpense(exp.id)}
                       className="p-1 text-slate-300 hover:text-red-500 transition-all hover:bg-red-50 rounded-lg">
                       <Trash2 className="w-3 h-3" />
@@ -266,7 +265,6 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
           </div>
         )}
 
-        {/* Inline Add Form — render below existing expenses */}
         {showAddForm && (
           <form onSubmit={handleAdd} className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100 space-y-2">
             <div className="flex gap-2 min-w-0">
@@ -325,12 +323,10 @@ export default function ParticipantLedger({ participant, items, sessionId, allPa
           </form>
         )}
 
-        {/* Empty state */}
         {sortedExpenses.length === 0 && !showAddForm && (
           <div className="text-center py-4 text-slate-400 text-xs font-medium">No expenses yet</div>
         )}
 
-        {/* Plus button at bottom */}
         {!showAddForm && (
           <div className="flex justify-center pt-0.5">
             <button onClick={() => { setShowAddForm(true); resetAddForm(); onEditingChange(true); }}
