@@ -48,8 +48,7 @@ npm run dev
                             |
                       groupbillsplit.me
                             |
-                     Oracle Cloud VM
-                     (REDACTED)
+                      Oracle Cloud VM
                             |
                      Nginx (ports 80 / 443)
                      - SSL termination (Let's Encrypt)
@@ -87,7 +86,7 @@ Every push to the `main` branch triggers an automatic deployment via GitHub Acti
 ```yaml
 on: push to main
 steps:
-  - SSH into production VM as `deploy` user
+  - SSH into production VM
   - git pull latest code
   - docker compose build (only changed images)
   - docker compose up -d (zero-downtime restart)
@@ -96,11 +95,11 @@ steps:
 
 ### Required GitHub Secrets
 
-| Secret          | Value                         |
-|-----------------|-------------------------------|
-| `DEPLOY_HOST`   | `REDACTED`               |
-| `DEPLOY_USER`   | `deploy`                      |
-| `DEPLOY_SSH_KEY`| Private SSH key for deploy user |
+| Secret          | Description                    |
+|-----------------|--------------------------------|
+| `DEPLOY_HOST`   | Production VM IP address       |
+| `DEPLOY_USER`   | SSH username for the VM        |
+| `DEPLOY_SSH_KEY`| Private SSH key for deployment |
 
 ---
 
@@ -137,22 +136,6 @@ All endpoints are prefixed with `/spring-api`.
 
 ---
 
-## Database Access (Production)
-
-Access the production MySQL database via SSH tunnel:
-
-```bash
-# Open tunnel (keep this terminal open)
-ssh -i REDACTED -L 3306:localhost:3306 ubuntu@REDACTED
-
-# In another terminal, connect
-mysql -h 127.0.0.1 -P 3306 -u splitter -p bill_splitter
-```
-
-**Credentials:** User `splitter`, password `REDACTED`, database `bill_splitter`.
-
-Or use any GUI tool (MySQL Workbench, DBeaver, TablePlus) pointing to `localhost:3306`.
-
 ---
 
 ## Project Structure
@@ -183,7 +166,7 @@ Or use any GUI tool (MySQL Workbench, DBeaver, TablePlus) pointing to `localhost
 - **Swap:** 2 GB swapfile to prevent OOM during Docker builds
 - **Nginx:** `proxy_http_version 1.1` required for proper POST body forwarding
 - **Backend startup:** ~60s (Hibernate schema validation + DB health checks)
-- **DNS:** A records for `@` and `www` point to `REDACTED` (Namecheap)
+- **DNS:** A records for `@` and `www` (Namecheap)
 - **Let's Encrypt:** `certbot.timer` runs twice daily; deploy hook reloads Nginx
 
 
